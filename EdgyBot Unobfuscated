@@ -1,0 +1,3053 @@
+// ==UserScript==
+// @name         EdgyBot - Edgenuity Bot
+// @namespace    http://tampermonkey.net/
+// @version      4.261
+// @description  [ Edgy means experimental :) ]
+// @author       EdgePlus / GSRHackZ
+// @match        *://student.edgenuity.com/*
+// @match        *://*.powerspeak.edgenuity.com/*
+// @match        *://*.core.learn.edgenuity.com/*
+// @match        *://brainly.in/*
+// @match        *://brainly.com/*
+// @match        *://brainly.ro/*
+// @match        *://brainly.pl/*
+// @match        *://brainly.ph/*
+// @match        *://*.core.learn.edgenuity.com/*/Error/*
+// @match        *://edgybot-gsrhackz.web.app/*
+// @match        *://emissary.edgenuity.com/*
+// @match        *://www.bing.com/*
+// @match        *://www.google.com/*
+// @match        *://media.edgenuity.com/media/*
+// @match        https://*.powerspeak.edgenuity.com/*
+// @match        *://github.com/*
+// @require      https://code.jquery.com/jquery-3.6.4.js
+// @require      https://code.jquery.com/ui/1.12.1/jquery-ui.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js
+// @icon         https://github.com/GSRHackZ/EdgyBot_edgenuity-nuke/blob/main/edgePlus2.png?raw=true
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @run-at       document-end
+// ==/UserScript==
+
+var $ = window.jQuery;
+var j = $.noConflict();
+const script_version = "4.261"; // note: beta version, not full release v4.261
+const bg_Img = "https://wallpaperaccess.com/full/2825704.gif";
+const logo = "https://github.com/GSRHackZ/EdgyBot_Edgenuity_Bot/blob/main/edgePlus2.png?raw=true"; // dead link
+
+/*
+Bot manual activation code, as the payment servers no longer exist
+Set:
+- INITIALS to your account's initials, in lowercase, as it appears on Edgenuity (e.g. "John Doe" would be "jd")
+- NUM_CLASSES to how many classes you want it to run on
+- USERNAME to a fake username (can be anything or left as-is)
+- PASSWORD a fake password (can be anything or left as-is)
+*/
+let INITIALS = "";
+let NUM_CLASSES = 0;
+let USERNAME = "";
+let PASSWORD = "";
+
+// ! DO NOT CHANGE ! (start)
+let letters = "abcdefghijklmnopqrstuvwxyz";
+function create_code(user,classCount) {
+    let usrChars = [];
+    let classCodes = [];
+    let sepJoin = "*-edgyBot_master_Mind2-*";
+    user = user.toLowerCase().replaceAll(" ","").replace(/[^\w\s]|_/g, "").replace(/\s+/g, "");
+    for(let i=0;i<user.length;i++){
+        usrChars.push(letters.indexOf(user[i]));
+    }
+    classCodes.push(classCount);
+    classCodes.push(letters[classCount]);
+    usrChars = usrChars.join("-")
+    classCodes = classCodes.join("|edgy_list_class|");
+    let pvCode = btoa(encodeURIComponent(usrChars+sepJoin+classCodes));
+    return pvCode;
+}
+function create_srvr(user, pass, initial) {
+    return btoa(encodeURIComponent(user + '||' + pass + '|-|' + initial));
+}
+GM_setValue("imp_stuff", create_code(initials, classes));
+GM_setValue("srvr_link", create_srvr(username, password, initials));
+GM_setValue("checked", "gsr_check");
+// ! DO NOT CHANGE ! (end)
+
+function create_code(user,classCount){
+    let usrChars = [];
+    let classCodes = [];
+    let sepJoin = "*-edgyBot_master_Mind2-*";
+    user = user.toLowerCase().replaceAll(" ","").replace(/[^\w\s]|_/g, "").replace(/\s+/g, "");
+    for(let i=0;i<user.length;i++){
+        usrChars.push(letters.indexOf(user[i]));
+    }
+    classCodes.push(classCount);
+    classCodes.push(letters[classCount]);
+    usrChars = usrChars.join("-")
+    classCodes = classCodes.join("|edgy_list_class|");
+    let pvCode = btoa(encodeURIComponent(usrChars+sepJoin+classCodes));
+    return pvCode;
+}
+
+const search = [
+    "cumulativeexamreview", "topicreviewactivity", "quiz", "unittestreview", "exam", "unittest",
+    "cumulativeexam", "topictest", "practice", "pretest", "testreview", "test", "gcquiz", "cumulativereviewactivity",
+    "cumulativetestreview", "cumulativeexamassessment", "culturegrams", "reading", "listening", "cumulativereview", "unitreview","labassessment","assessment",
+    "prácticapractice","examencitoquiz","lección1lecture1","vocabulariovocabulary","lección1lecture2","lección1lecture3","lección1lecture4","lección1lecture5"
+];
+const allowed = [
+    "reflectionlecture", "explorationlecture", "lablesson", "lablecture", "introductorylecture",
+    "spotlightlecture", "introductoryskillslecture", "applicationlecture", "applicationskillslecture", "lecture", "instruction", "warmup",
+    "directinstruction", "instructional", "vocabulary", "part1", "part2", "part3", "part4", "part5", "part6", "part7", "part8", "part9", "part10",
+    "pre-readlecture", "post-readlecture", "prereadlecture", "postreadlecture", "unitwrap-up", "wrap-up", "wrapup", "unitwrapup", "careerconnection",
+    "casestudy", "unitoverview","grammerlecture","summary"
+];
+const assign = ["assignment","virtuallab","wetlab"];
+const vocab = ["vocabulary"];
+const gsr = ["eresource", "studytool", "onlinecontent", "interactive", "applyyourknowledge", "globalconnectionactivity"];
+const staged = ["prewriting","roughdraft","finaldraft","drafting","revising"];
+const maybe = ["journalactivity"];
+
+try{
+    let url = location.href;
+    if(!url.includes("bing.com")){
+        //fetch('https://raw.githubusercontent.com/GSRHackZ/EdgyBot_Edgenuity_Bot/main/assets/settings.json').then(response => response.json()).then(data => {
+		// bypassed due to dead link
+			let data = {
+				"RUN_THIS": "",
+				"SCRIPT_INFO": "",
+				"CURRENT_VERSION_OUT": script_version,
+				"EDGEPLUS_MSG": "",
+				"DISABLED_USERS": [],
+				"ACTIVE": true
+			};
+            let RUN_THIS = data.RUN_THIS, SCRIPT_INFO = data.SCRIPT_INFO, CURRENT_VERSION_OUT = data.CURRENT_VERSION_OUT,
+                EDGEPLUS_MSG = data.EDGEPLUS_MSG, DISABLED_USERS = data.DISABLED_USERS, ACTIVE = data.ACTIVE;
+            //if(ACTIVE==true){
+                if(CURRENT_VERSION_OUT>Number(script_version)){
+                    let update_msg = `\nYou must update to the latest version of EdgyBot to continue using EdgyBot.\n\nCurrent Version: v${script_version} 🔴\nLatest Version: v${CURRENT_VERSION_OUT} 🟢\n\nClick OK then click the link on the screen to update to the latest version.`;
+                    alert(update_msg);
+                    let edgybot_link = "https://github.com/GSRHackZ/EdgyBot_Edgenuity_Bot/raw/main/edgyBot.user.js";
+                    document.body.innerHTML = `
+                <div style="margin-top:50vh;text-align:center;">
+                  <a id = "update_edgy_link" style="color:blue;text-decoration:none;" href="${edgybot_link}"><h1>Click to update to the latest version of EdgyBot (v${CURRENT_VERSION_OUT})</h1></a>
+                </div>`;
+                }
+                else{
+                    let determined = false,dropped = false;
+                    let pageRoute = setInterval(()=>{
+                        if(determined !== location.href){
+                            determined = location.href;
+                            if (location.href == "https://student.edgenuity.com/"){dashboard()}
+                            else if(location.href.includes("https://edgybot-gsrhackz.web.app/pages/key.html?user")){
+                                if(!location.href.includes("https://edgybot-gsrhackz.web.app/pages/class_add.html?")){
+                                    save_it();
+                                }
+                            }
+                            else if (location.href.includes("https://edgybot-gsrhackz.web.app/pages/checker.html?info_check")){
+                                if(!location.href.includes("https://edgybot-gsrhackz.web.app/pages/class_add.html?")){
+                                    login_auth();
+                                }
+                            }
+                            else if (location.href.includes("https://student.edgenuity.com/enrollment/") && location.href.includes("coursemap")) {
+                                courseline();
+                            }
+                            else if (location.href.includes(".core.learn.edgenuity.com/player/")) {
+                                final();
+                            }
+                            else if (location.href.includes("//emissary.edgenuity.com/")) {
+                                getThoughts();
+                            }
+                            else if (location.href.includes("https://brainly.")) {
+                                brainly_lockPick();
+                            }
+                            if(!dropped){
+                                continueSession();
+                                listeners();
+                                dropped=true;
+                            }
+                            try{langAuto()}catch(e){};
+                        }
+                    },200);
+                }
+            //}
+            //else{
+                //alert("All EdgyBots are currently offline. Please be patient while the developer(s) work on bringing them back up 🙏")
+            //};
+        //.})
+    }else{
+        bing();
+    }
+}catch(e){
+    alert("An issue has occured trying to launch EdgyBot. Please try refreshing the page to see if that would fix the issue, if not check on github for any updates. 🙏");
+}
+
+function langAuto() {
+    let opened_search = false;
+    if (location.href.includes(".powerspeak.edgenuity.com")) {
+        let currentinterval = setInterval(() => {
+            try {
+                document.querySelector('.App__container__soundBlocker').click();
+            } catch (e) {
+                console.log(e)
+            };
+            try {
+                try {
+                    if ('innerHTML' in document.querySelector('.PronunciationStation__container')) {
+                        alert("This was found to be a recording assignment. Since it cannot be skipped, you'll have to do this one manually.");
+                        clearInterval(currentinterval);
+                    } else {
+                        throw new ReferenceError();
+                    }
+                } catch (err) {
+                    document.querySelector('.CompleteWindow__continue').click();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 10000);
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        }, 500);
+
+    } else if (location.href.includes('/ContentViewers/Powerspeak/SubmitAttempt')) {
+        let repeat = setInterval(() => {
+            try {
+                if ((new Boolean(window.submitted)) || document.querySelector('.align-right').innerText.toLowerCase().has('submitted')) {
+                    clearInterval(repeat);
+                    exit("smart");
+                }
+            } catch (e) {}
+        }, 500);
+    } else if (location.href.includes("/ContentViewers/Powerspeak") || location.href.includes("ContentViewers/Writing")/* || location.href.includes("ContentViewers/Essay")*/) {
+        let checktype = (function() {
+            let form = document.querySelector('form');
+            if(form!==null){
+                let runfunc = () => {
+                    try {
+                        document.querySelector('.gradient-Divider').children[0].children[0].click();
+                    } catch (err) {
+                        console.log(err);
+                        setTimeout(checktype, 500);
+                    }
+                };
+                let runwritefunc = () => {
+                    try {
+                        document.querySelector("#actionIndicator").setAttribute('name', 'action:submit');
+                        form.submit();
+                        console.log("submitting")
+                    } catch (err) {
+                        console.log(err);
+                        setTimeout(checktype, 500);
+                    }
+                };
+                var answerwriting = () => {
+                    try {
+                        let readMore = document.querySelector('#journal-read-more-link');
+                        if (readMore.innerText.toLowerCase().includes('more')) {
+                            readMore.click();
+                        }
+                    } catch(e){alert(e)}
+                    let writinginterval = (function() {
+                        try {
+                            let question = document.querySelector('.journal-question.essay-prompt-expanded').innerText;
+                            try{document.querySelector('#journal-read-more-link').remove();}catch(e){console.log(e)}
+                            if(!opened_search){
+                                opened_search = true;
+                            }
+                        } catch (err) {
+                            console.log(err);
+                            setTimeout(writinginterval, 1000);
+                        }
+                    })();
+                };
+                var assistrecording = () => {
+                    try {
+                        let readMore = document.querySelector('#journal-read-more-link');
+                        if (readMore.innerText.toLowerCase().includes('more')) {
+                            readMore.click();
+                        }
+                    } catch(e){console.log(e)}
+                    let recordinginterval = (function() {
+                        try {
+                            try{document.querySelector('#journal-read-more-link').remove();}catch(e){console.log(e)}
+                            var question;
+                            var type = 0;
+                            question = document.querySelector('.journal-question.essay-prompt-expanded');
+                            try {
+                                if('innerText' in question){}
+                            } catch(e) {
+                                console.log(e);
+                                question = document.getElementById('instruction');
+                                type = 1;
+                            }
+                        } catch (err) {
+                            alert(err);
+                            setTimeout(recordinginterval, 1000);
+                        }
+                    })();
+                };
+                var isPractice = parent.document.getElementById("activity-title").innerText.toLowerCase().includes('practice');
+                if (!form.action.includes('SubmitAudioAttempt') && !form.action.includes('Writing')) {
+                    runfunc();
+                } else {
+                    if (form.action.includes('Writing')) {
+                        answerwriting();
+                    } else {
+                        assistrecording();
+                    }
+                }
+            }
+        })();
+        setTimeout(() => {
+            let status = parent.document.getElementById("activity-status");
+            if (status !== null) {
+                if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                    exit("smart");
+                }
+            }
+        }, 500);
+    }
+}
+
+function brainly_lockPick() {
+    let set_remove = false;
+    let cleared_cookies = false;
+    if (!set_remove) {
+        setInterval(() => {
+            if (document.getElementById("credential_picker_container") !== null) {
+                document.getElementById("credential_picker_container").remove();
+            }
+            if (document.getElementsByClassName("brn-qpage-layout__right")[0] !== undefined) {
+                document.getElementsByClassName("brn-qpage-layout__right")[0].remove();
+            }
+            if (document.getElementsByClassName("sg-space-ignore")[0] !== undefined) {
+                document.getElementsByClassName("sg-space-ignore")[0].remove();
+            }
+            if (document.getElementsByClassName("js-dialog sg-dialog__overlay sg-dialog__overlay--size-l sg-dialog__overlay--scroll sg-dialog__overlay--open")[0] !== undefined) {
+                document.getElementsByClassName("js-dialog sg-dialog__overlay sg-dialog__overlay--size-l sg-dialog__overlay--scroll sg-dialog__overlay--open")[0].remove();
+            }
+            if (!cleared_cookies && document.cookie.split(";").length > 0) {
+                document.cookie.split(";").forEach((c) => {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                })
+                localStorage.clear();
+                cleared_cookies = true;
+            }
+        }, 500);
+        set_remove = true;
+    }
+}
+
+function continueSession() {
+    let checker = setInterval(function() {
+        if (document.querySelector('#btnContinue') !== null) {
+            document.querySelector('#btnContinue').click();
+            clearInterval(checker);
+        }
+    }, 10000);
+};
+
+function listeners() {
+    document.addEventListener("keyup", (evt) => {
+        evt.preventDefault();
+        if (evt.keyCode == "82" && evt.altKey) {
+            let ask = confirm("This action is usually done to fix issues on the user's end.\nWould you like to factory reset your edgenuity bot?\n\nClick OK to confirm reset. 🔴");
+            if (ask) {
+                reset_bot();
+                setTimeout(() => {
+                    alert("Your EdgyBot has been successfully factory reset. 😊");
+                    location.reload();
+                }, 1000);
+            }
+        }
+    })
+}
+
+
+function bing_clean(string) {
+    return string.trim().toLowerCase().replaceAll("\n", "").replaceAll("\t", "")
+        .replaceAll("✓", "").replaceAll("see more", "")
+        .replaceAll("answer:", "").replaceAll("the correct answer is:", "")
+        .split("explanation:")[0].trim();
+}
+
+async function bing(){
+    let answer_array = await GM_getValue("bing_answer");
+    if(answer_array==false||answer_array==undefined){answer_array=[]};
+    let searching = false;
+    document.cookie.split(";").forEach((c) => {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    })
+    localStorage.clear();
+    let answer_grab = setInterval(async ()=>{
+        if(document.getElementsByClassName("b_rcquizAnswer")[0]!==undefined){
+            let answers = document.getElementsByClassName("b_rcquizAnswer");
+            for(let i=0;i<answers.length;i++){let answer = bing_clean(answers[i].innerText);if(clean(answer).length>0){answer_array.push(answer)}};
+        }
+        if(document.getElementsByClassName("b_focusTextMedium")[0]!==undefined){
+            let answer = bing_clean(document.getElementsByClassName("b_focusTextMedium")[0].innerText);
+            if(clean(answer).length>0){answer_array.push(answer)};
+        }
+        if(document.getElementsByClassName("b_rcquiz_answer")[0]!==undefined){
+            let answer = bing_clean(document.getElementsByClassName("b_rcquiz_answer")[0].innerText.replaceAll("✓ ",""));
+            if(clean(answer).length>0){answer_array.push(answer)};
+        }
+        if(document.getElementsByClassName("ans-hdr")[0]!==undefined){
+            if(document.getElementsByClassName("ans-hdr")[0].getElementsByClassName("b_focusTextLarge")[0]!==undefined){
+                let answer = bing_clean(document.getElementsByClassName("ans-hdr")[0].getElementsByClassName("b_focusTextLarge")[0].innerText.replaceAll("\n","").replaceAll("\t",""));
+                if(clean(answer).length>0){answer_array.push(answer)};
+            }
+        }
+        if(answer_array.length==0){
+            if(document.getElementsByClassName("b_lineclamp2")[0]!==undefined){
+                let txt_dump = document.getElementsByClassName("b_lineclamp2");
+                for(let i=0;i<txt_dump.length;i++){if(txt_dump[i].innerText.split(" · ")[1]!==undefined){if(clean(txt_dump[i].innerText.split(" · ")[1]).length>0){answer_array.push(txt_dump[i].innerText.split(" · ")[1])}}}}
+        }
+        if(answer_array.length>0){GM_setValue("bing_answer",answer_array)};
+        if(answer_array.length>=3){GM_setValue("all_bing_found",true);clearInterval(answer_grab)}
+        else{
+            let search = document.getElementsByClassName("b_searchbox")[0];
+            if(search!==undefined){search = search.value};
+            clearInterval(answer_grab);
+            let state_check = await GM_getValue("bing_search_state");
+            if(state_check==undefined){
+                if(!search.includes("site:quizlet.com")&&!search.includes("site:weegy.com")&&!search.includes("site:brainly.com")){
+                    searching = true;
+                    search = `site:quizlet.com ${search.trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }else if(search.includes("site:quizlet.com")){
+                    searching = true;
+                    search = `site:weegy.com ${search.replaceAll("site:quizlet.com","").trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }else if(search.includes("weegy.com")){
+                    searching = true;
+                    search = `site:brainly.com ${search.replaceAll("site:weegy.com","").trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }else if(search.includes("brainly.com")){
+                    GM_setValue("bing_search_state",1);
+                    searching = true;
+                    search = `${search.replaceAll("site:brainly.com","").trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }
+            }
+            else if(state_check==1){
+                if(!search.includes("site:quizlet.com")&&!search.includes("site:weegy.com")&&!search.includes("site:brainly.com")){
+                    searching = true;
+                    search = `site:quizlet.com ${search.split("?")[0].split("__.")[0].trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }else if(search.includes("site:quizlet.com")){
+                    searching = true;
+                    search = `site:weegy.com ${search.replaceAll("site:quizlet.com","").split("?")[0].split("__.")[0].trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }else if(search.includes("weegy.com")){
+                    searching = true;
+                    search = `site:brainly.com ${search.replaceAll("site:weegy.com","").split("?")[0].split("__.")[0].trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }else if(search.includes("brainly.com")){
+                    GM_setValue("bing_search_state",2);
+                    searching = true;
+                    search = `${search.replaceAll("site:brainly.com","").split("?")[0].split("__.")[0].trim()}`;
+                    location.href = `https://www.bing.com/search?q=${search}`;
+                }
+            }
+            else if(state_check == 2){
+                GM_deleteValue("bing_search_state");
+                GM_setValue("all_bing_found",true);
+                GM_setValue("bing_answer", answer_array);
+            }
+        }
+    },500);
+}
+
+
+function idle_stop() {
+    document.body.click();
+    document.querySelector('body').dispatchEvent(new MouseEvent('mousedown'));
+    document.querySelector('body').dispatchEvent(new MouseEvent('mouseup'));
+    simKey(document.getElementsByTagName("body")[0], "e");
+    document.getElementsByTagName("body")[0].click();
+}
+
+function simKey(elem, key) {
+    elem.dispatchEvent(
+        new KeyboardEvent("keyup", {
+            key: key
+        })
+    );
+}
+function getRandomRotationDegree() {
+    const rotationDegrees = [10, 5, -5, -10, ];
+    const randomIndex = Math.floor(Math.random() * rotationDegrees.length);
+    return rotationDegrees[randomIndex];
+}
+
+async function brain(class_add_extra) {
+    console.log("brain")
+    let menu = document.createElement("div");
+    menu.innerHTML = `
+    <div title="Hide Menu" id="title_left" style="width:fit-content;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:row;cursor:pointer;">
+    <img style="width:80px;" src="https://github.com/GSRHackZ/EdgyBot_Edgenuity_Bot/blob/main/edgePlus2.png?raw=true"/> <b style="font-size:16px;color:white;">EdgyBot v${script_version}</b>
+    </div>
+    <div style="width:100%;height:95%;display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-right:20px;padding:10px;">
+    <select title="Wallpaper Settings" id="bg_select" style="width:350px;height:30px;cursor:pointer;outline:none;background:transparent;color:white;border:1px solid white;">
+    <option style="color:black" value="def_op">Wallpaper Settings 🎨</option>
+    <option style="color:black" value="edgy">EdgePlus Wallpaper</option>
+    <option style="color:black" value="edge">Edgenuity Wallpaper</option>
+    <option style="color:black" value="custom">Custom Wallpaper</option>
+    </select>
+    <button style="width:250px;font-size:16px;padding:5px;cursor:pointer;border:none;outline:none;display:flex;justify-content:center;align-items:center;border-radius:3px;background:#3583c2;color:white;transition:.5s;" title="Start EdgyBot" id="start_bot">Start EdgyBot</button>
+    </div>
+    `;
+    menu.style = `overflow:hidden;background:transparent;position:fixed;bottom:0;width:100%;z-index:9999999999999999999999;height:fit-content;display:flex;justify-content:space-around;align-items:center;flex-direction:row;padding:10px;padding-bottom:20px;transition:.5s;`;
+    cleanUp();
+    idle_stop();
+    document.body.append(menu);
+    let watermark = document.createElement("img");
+    let watermark_2 = document.createElement("img");
+    watermark_2.id = "itac_"
+    watermark.src = `https://raw.githubusercontent.com/GSRHackZ/EdgyBot_Edgenuity_Bot/main/assets/watermark_new.png`;
+    watermark_2.src = `https://raw.githubusercontent.com/GSRHackZ/EdgyBot_Edgenuity_Bot/main/assets/itac_watermark.png`;
+    watermark.style = `position:fixed;width:11%;pointer-events: none;user-select: none;-moz-user-select: none;-webkit-user-select: none;-ms-user-select: none;right:50px;bottom:100px;opacity:100%;transition:.5s;`;
+    watermark_2.style = `position:fixed;width:8%;pointer-events: none;user-select: none;-moz-user-select: none;-webkit-user-select: none;-ms-user-select: none;left:50px;bottom:110px;opacity:100%;transition:.5s;`;
+    document.body.append(watermark);
+    document.body.append(watermark_2);
+    watermark.style.transform = `rotate(${getRandomRotationDegree()}deg)`;
+    watermark_2.style.transform = `rotate(${getRandomRotationDegree()}deg)`;
+    let startBot = document.getElementById("start_bot");
+    let bot_active = await GM_getValue("bot_active");
+    let bg_setting = await GM_getValue("bg_setting");
+    let stop_now = await GM_getValue("stop_now");
+    let state = await GM_getValue("menu_state");
+    let title = document.getElementById("title_left");
+    let dropdown = document.getElementById("bg_select");
+    let home_btn = document.getElementsByClassName("nav-home nav")[0];
+    let done = false;
+    home_btn.addEventListener("click",()=>{
+        GM_deleteValue("picked_activity");
+        GM_deleteValue("class_wip");
+        GM_deleteValue("bot_active");
+        location.href="https://student.edgenuity.com/";
+    })
+    startBot.addEventListener("click", async () => {
+        let bot_active = await GM_getValue("bot_active");
+        if (bot_active !== true) {
+            GM_setValue("bot_active", true);
+            GM_setValue("class_wip",class_add_extra);
+            startEdgy();
+        }
+    })
+    title.addEventListener("click", async () => {
+        let state = await GM_getValue("menu_state");
+        if (state == undefined) {
+            watermark.style.opacity = "0%";
+            watermark_2.style.opacity = "0%";
+            menu.style.opacity = "5%";
+            GM_setValue("menu_state", "hidden");
+            title.title = "Reveal Menu";
+        } else {
+            watermark.style.opacity = "100%";
+            watermark_2.style.opacity = "100%";
+            menu.style.opacity = "100%";
+            GM_deleteValue("menu_state");
+            title.title = "Hide Menu";
+        }
+    })
+    dropdown.addEventListener("change", (event) => {
+        const selectedFunction = event.target.value;
+        switch (selectedFunction) {
+            case "edgy":
+                bg(bg_Img);
+                GM_setValue("bg_setting", "edgy");
+                break;
+            case "edge":
+                document.getElementsByTagName("body")[0].style.background = `#444`;
+                GM_deleteValue("bg_setting");
+                GM_deleteValue("custom_bg");
+                break;
+            case "custom":
+                getBg(menu);
+                break;
+        }
+        event.target.value = "def_op";
+    });
+    if (bot_active) {
+        startEdgy();
+    }
+    if (state == "hidden") {
+        watermark.style.opacity = "5%";
+        watermark_2.style.opacity = "5%";
+        menu.style.opacity = "5%";
+        title.title = "Reveal Menu";
+    }
+    if (bg_setting == "custom") {
+        let bg_img = await GM_getValue("custom_bg");
+        if (bg_img !== undefined) {
+            bg(bg_img);
+        }
+    } else if (bg_setting == "edgy") {
+        bg(bg_Img);
+    }
+    async function startEdgy() {
+        startBot.innerText = "Stop EdgyBot";
+        startBot.title = "Stop EdgyBot";
+        startBot.style.background = "red";
+        startBot.addEventListener("click", ()=>{
+            if(stop_now!==true){
+                let diff_op = prompt("Pick an EdgyBot Stop Option Below 🔴\n\n1. Stop EdgyBot after this activity is over / page refresh 🕔\n\n2. Stop EdgyBot now 🙅‍♂️\n\n3. Always stop EdgyBot immediately 💨\n\nEnter 1, 2, or 3  1️⃣ 2️⃣ 3️⃣");
+                if(diff_op){
+                    if(clean(diff_op)==1){
+                        GM_setValue("bot_active", false);
+                        GM_deleteValue("class_wip");
+                        try{GM_deleteValue("picked_activity")}catch(e){};
+                        startBot.innerText = "EdgyBot Temp Active";
+                        startBot.disabled = true;
+                        startBot.style.background="grey";
+                        startBot.title="EdgyBot will stop at the end of this activity...";
+                    }
+                    else if(clean(diff_op)==2){
+                        GM_setValue("bot_active", false);
+                        GM_deleteValue("class_wip");
+                        try{GM_deleteValue("picked_activity")}catch(e){};
+                        exit();
+                    }
+                    else if(clean(diff_op)==3){
+                        GM_setValue("stop_now",true);
+                        GM_setValue("bot_active", false);
+                        GM_deleteValue("class_wip");
+                        try{GM_deleteValue("picked_activity")}catch(e){};
+                        exit();
+                    }
+                }
+            }else{
+                GM_setValue("bot_active", false);
+                GM_deleteValue("class_wip");
+                try{GM_deleteValue("picked_activity")}catch(e){};
+                exit();
+            }
+        })
+        let activitytmp = document.getElementById("activity-title").innerText;
+        let status = clean(document.getElementById("activity-status").innerText);
+        let activity = clean(activitytmp);
+        if (activitytmp.indexOf(':') != -1) {
+            activity = clean(activitytmp.substring(0, activitytmp.indexOf(':')));
+        }
+        //console.log(activity)
+        //console.log(activitytmp)
+        if (search.includes(activity)) {
+            let stop_afk = document.createElement("button");
+            stop_afk.style = `width:350px;font-size:16px;padding:5px;height:30px;cursor:pointer;border:none;outline:none;display:flex;justify-content:center;align-items:center;border-radius:3px;background:grey;color:white;transition:.5s;margin-right:20px;display:none;`;
+            let afk_state = await GM_getValue("afk_state_tests_");
+            menu.append(stop_afk);
+            deep(menu,activity);
+            if(afk_state==undefined){
+                stop_afk.innerText = "Deactivate Auto Answer";
+            }
+            else if(afk_state=="off_set"){
+                stop_afk.innerText = "Activate Auto Answer";
+            }
+            stop_afk.addEventListener("click",()=>{
+                if(afk_state==undefined){GM_setValue("afk_state_tests_","off_set")}else if(afk_state=="off_set"){GM_deleteValue("afk_state_tests_")};
+                let ask = confirm("For this change to take effect, The page needs to reload. Click OK to reload the page. 😊");
+                if(ask){
+                    location.reload();
+                }
+            })
+        } else if (assign.includes(activity)) {
+            assign_auto();done = true;
+        } else if (vocab.includes(activity)) {
+            vocabAuto();done = true;
+        } else if (staged.includes(activity)) {
+            //staged_writing(menu,activity);done = true;
+        } else if (maybe.includes(activity)) {
+            keyword_finish(menu, activity);done = true;
+        } else {
+            for (let i = 0; i < gsr.length; i++) {
+                if (clean(gsr[i]).includes(activity) || activity.includes(clean(gsr[i]))) {
+                    dynamo(menu, activity, true);
+                    done = true;
+                    break;
+                }
+            };
+            try {
+                if (activitytmp.includes("/")) {
+                    alert("EdgyBot might not have support for this type of activity 🤔")
+                };
+                if(!done){
+                    if(!assign.includes(activity)){
+                        ungraded();
+                        dynamo(menu, activity, false);
+                    }
+                }
+            } catch (e) {};
+        };
+        // for afk use v
+        // prevent computer / laptop from going to sleep v
+        if(!location.href.includes("bing")){
+            autoClicker();
+            function isScreenLockSupported() {
+                return ('wakeLock' in navigator)
+            }
+            async function getScreenLock() {
+                if (isScreenLockSupported()) {
+                    let screenLock;
+                    try {
+                        screenLock = await navigator.wakeLock.request('screen')
+                    } catch (err) {}
+                    return screenLock;
+                }
+            }
+            try {
+                let screenLock = await getScreenLock();
+                document.addEventListener('visibilitychange', async () => {
+                    if (screenLock !== null && document.visibilityState === 'visible') {
+                        screenLock = await navigator.wakeLock.request('screen')
+                    }
+                })
+            } catch (e) {}
+        }
+    }
+}
+
+let sip = false;
+async function assign_auto() {
+    let waitFor = setInterval(async () => {
+        let env = document.getElementsByName("stageFrame")[0].contentWindow;
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let API = false;
+        if (env.API !== undefined) {
+            API = env.API;
+            API.Frame.entryAudioFilename = null;
+            API.Frame.exitAudioFilename = null;
+            API.Frame.hasEntryAudioPlayed = true;
+            API.Frame.hasExitAudioPlayed = true;
+        };
+        if (doc !== null) {
+            if (doc.getElementById("main_area") !== null) {
+                if (doc.getElementById("main_area").getElementsByTagName("video")[0] !== undefined) {
+                    let vid = doc.getElementById("main_area").getElementsByTagName("video")[0];
+                    vid.muted = true;
+                    vid.addEventListener("ended", () => {
+                        API.FrameChain.nextFrame()
+                    })
+                    if (!vid.playing) {
+                        vid.play()
+                    };
+                }
+                else{
+                    if(doc.getElementById("iFramePreview")!==null){
+                        let new_doc = doc.getElementById("iFramePreview").contentDocument;
+                        if(new_doc!==null){
+                            let content = new_doc.getElementsByClassName("content")[0];
+                            if(content!==undefined){
+                                let text = content.innerText.replaceAll("\n","").replaceAll("\t","");
+                                if(clean(text).length>0){
+                                    if(content.getElementsByClassName("answer_displayed_bing")[0]==undefined&&!sip){
+                                        sip = true;
+                                        GM_deleteValue("bing_answer");
+                                        GM_deleteValue("all_bing_found");
+                                        let search_query = `https://www.bing.com/search?q=${text}`;
+                                        let iframe = document.createElement("iframe");
+                                        iframe.src = search_query;
+                                        iframe.style.visibility = "hidden";
+                                        document.body.append(iframe);
+                                        let answer_await = setInterval(async()=>{
+                                            let bing_answers = await GM_getValue("bing_answer");
+                                            let all_found = await GM_getValue("all_bing_found");
+                                            if(all_found!==undefined){
+                                                let answer_display = document.createElement("div");
+                                                if(bing_answers==false){bing_answers = ["",""]};
+                                                answer_display.className = "answer_displayed_bing";
+                                                answer_display.innerText = `\n\nAnswers: \n\n${bing_answers.join("\n\n")}`;
+                                                content.append(answer_display);
+                                                clearInterval(answer_await);
+                                                iframe.remove();
+                                                sip = false;
+                                            }
+                                        },500);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (doc.getElementsByTagName("iframe")[0].contentDocument !== null) {
+                doc.getElementById("invis-o-div").style.display = "none";
+            }
+        }
+    }, 1000);
+    let watchOut = setInterval(() => {
+        let status = document.getElementById("activity-status");
+        if (status !== null) {
+            if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                clearInterval(watchOut);
+                exit("smart");
+            }
+        };
+    }, 600);
+};
+
+
+
+function getThoughts() {
+    let checker = setInterval(async () => {
+        let original_thoughts = await GM_getValue("emissary_thoughts");
+        if (document.getElementsByTagName("body")[0] !== undefined) {
+            let backup = document.body.innerText.replaceAll("\n", "").replaceAll("\t", "");
+            if (document.getElementsByTagName("article")[0] !== undefined) {
+                let article = document.getElementsByTagName("article")[0];
+                backup = article.innerText.replaceAll("\n", "").replaceAll("\t", "");
+                if (article.getElementsByTagName("section")[0] !== undefined) {
+                    backup = article.getElementsByTagName("section")[0].innerText.replaceAll("\n", "").replaceAll("\t", "");
+                }
+            }
+            let imgs = document.getElementsByTagName("img");
+            for (let i = 0; i < imgs.length; i++) {
+                if (imgs[i].alt.length > 0) {
+                    backup += imgs[i].alt.replaceAll("\n", "").replaceAll("\t", "");
+                }
+            }
+            if(original_thoughts!==undefined){
+                backup = `${backup}\n\n${original_thoughts}`;
+            }
+            GM_setValue("emissary_thoughts", backup);
+            setTimeout(async () => {
+                let saved = await GM_getValue("emissary_thoughts");
+                if (saved !== undefined) {
+                    window.close();
+                }
+            }, 1000);
+            clearInterval(checker);
+        }
+    }, 500);
+}
+
+async function dynamo(menu, activity, timer_allow) {
+    if (timer_allow) {
+        create_timer(menu, activity);
+    };
+    let checker = setInterval(async () => {
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        if (doc !== null) {
+            try{
+                setTimeout(()=>{
+                    let body = doc.querySelectorAll("iframe")[0].contentDocument.querySelector("body").querySelector("p");
+                    if(body!==null){
+                        if(body.innerText.length==0){
+                            location.reload();
+                        }
+                    }
+                },10000)}catch(e){}
+            GM_deleteValue("emissary_thoughts");
+            let time_delay = 60000;
+            let human_read = "1 minute";
+            let p = document.createElement("p");
+            let counter = 0;
+            let set_counter = false;
+            let activity = document.getElementById("activity-title").innerText;
+            if (activity.indexOf(':') != -1) {
+                activity = clean(activity.substring(0, activity.indexOf(':')))
+            } else {
+                activity = clean(activity)
+            };
+            setInterval(async () => {
+                let hourglass = await GM_getValue("timer_settings");
+                if (hourglass !== undefined) {
+                    for (let i = 0; i < hourglass.length; i++) {
+                        if (hourglass[i].activity == activity) {
+                            time_delay = 60000 * hourglass[i].delay;
+                            let extra = "minute";
+                            if (hourglass[i].delay > 1) {
+                                extra = "minutes"
+                            };
+                            human_read = `${hourglass[i].delay} ${extra}`;
+                            console.log(hourglass[i].activity);
+                            break;
+                        }
+                    }
+                }
+                let msg = `You have set the submit delay to:\n\n${human_read}\n\nEdgyBot will submit the activity in ${(time_delay-counter)/60000} minutes\n\n｡◕‿◕｡`;
+                p.innerText = msg;
+            }, 1000);
+            try {
+                doc.getElementById("SubmitQuestionsButton").click()
+            } catch (e) {};
+            let boxes = doc.querySelectorAll("iframe");
+            let links = doc.querySelectorAll(".weblink");
+            //console.log(links)
+            let temp = [];
+            for (let i = 0; i < links.length; i++) {
+                if (!links[i].href.includes(".pdf")) {
+                    temp.push(links[i])
+                }
+            };
+            //console.log(temp);
+            let last_index = 0;
+            let working = false;
+            if(temp.length > 0){
+                let scraper = setInterval(()=>{
+                    if(!working){
+                        if(temp[last_index]!==undefined){
+                            working = true;
+                            let iframe = document.createElement("iframe");
+                            iframe.style.visibility = "hidden";
+                            iframe.src = temp[last_index].href;
+                            document.body.append(iframe);
+                            setTimeout(()=>{
+                                last_index+=1;
+                                working = false;
+                            },1000)
+                        }else{
+                            clearInterval(scraper);
+                            answer_emissary();
+                        }
+                    }
+                },500);
+            }
+            async function answer_emissary(){
+                let all_thoughts = await GM_getValue("emissary_thoughts");
+                let wait_delay = 100000
+                for (let i = 0; i < boxes.length; i++) {
+                    let inps = boxes[i].contentDocument.querySelector("body").querySelector("p")
+                    typeThis(inps, all_thoughts, 40);
+                }
+                if (!set_counter) {
+                    let timer_edgy_display = document.createElement("h4");
+                    timer_edgy_display.innerText = `Submitting in: ${Math.floor(((time_delay-counter)/60000)*60)} seconds  ◕‿◕`;
+                    timer_edgy_display.style="color:white;float:right;";
+                    document.getElementById("lessonInfo").append(timer_edgy_display)
+                    let crazy = setInterval(async() => {
+                        counter += 1000;
+                        timer_edgy_display.innerText = `Submitting in: ${Math.floor(((time_delay-counter)/60000)*60)} seconds  ◕‿◕`;
+                        if (time_delay - counter <= 0) {
+                            for (let i = 0; i < boxes.length; i++) {
+                                let inps = boxes[i].contentDocument.querySelector("body").querySelector("p")
+                                inps.innerText = all_thoughts;
+                            }
+                            let inp = boxes[0].contentDocument.querySelector("body").querySelector("p")
+                            if (inp.innerText.length > 0) {
+                                GM_deleteValue("emissary_thoughts");
+                                submit_oc();
+                                clearInterval(crazy);
+                            }
+                        }
+                    }, 1000);
+                    set_counter = true;
+                }
+            };
+            clearInterval(checker);
+        }
+    }, 1000);
+    let watchout = setInterval(() => {
+        let status = document.getElementById("activity-status");
+        if (status !== null) {
+            if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                clearInterval(watchout);
+                exit("smart");
+            }
+        }
+    }, 1200);
+}
+
+function submit_oc() {
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    if (doc.getElementById("SubmitQuestionsButton") !== null) {
+        let submitBtn = doc.getElementById("SubmitQuestionsButton");
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("disabled");
+        GM_deleteValue("emissary_thoughts");
+        submitBtn.click();
+    }
+}
+
+function removeDuplicates(str) {
+    const excludedWords = ['the', 'a', 'an', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'in', 'out', 'up', 'down', 'with'];
+    const words = str.toLowerCase().split(/\W+/);
+    const uniqueWords = {};
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if (excludedWords.includes(word) || word === '') {
+            continue;
+        }
+        if (!uniqueWords[word]) {
+            uniqueWords[word] = true;
+        }
+    }
+    return Object.keys(uniqueWords).join(' ');
+}
+
+
+async function keyword_finish(menu, activity) {
+    create_timer(menu, activity);
+    let checker = setInterval(async () => {
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        if (doc !== null) {
+            GM_deleteValue("emissary_thoughts");
+            let time_delay = 60000;
+            let human_read = "1 minute";
+            let p = document.createElement("p");
+            let counter = 0;
+            let set_counter = false;
+            let activity = document.getElementById("activity-title").innerText;
+            if (activity.indexOf(':') != -1) {
+                activity = clean(activity.substring(0, activity.indexOf(':')))
+            } else {
+                activity = clean(activity)
+            };
+            setInterval(async () => {
+                let hourglass = await GM_getValue("timer_settings");
+                if (hourglass !== undefined) {
+                    for (let i = 0; i < hourglass.length; i++) {
+                        if (hourglass[i].activity == activity) {
+                            time_delay = 60000 * hourglass[i].delay;
+                            let extra = "minute";
+                            if (hourglass[i].delay > 1) {
+                                extra = "minutes"
+                            };
+                            human_read = `${hourglass[i].delay} ${extra}`;
+                            break;
+                        }
+                    }
+                }
+                let msg = `You have set the submit delay to:\n\n${human_read}\n\nEdgyBot will submit the activity in ${(time_delay-counter)/60000} minutes\n\n｡◕‿◕｡`;
+                p.innerText = msg;
+            }, 1000);
+            try {
+                doc.getElementById("SubmitQuestionsButton").click()
+            } catch (e) {};
+            if (doc.getElementsByClassName("journal-question")[0] !== undefined) {
+                let boxes = doc.querySelectorAll("iframe");
+                let prompt = doc.getElementsByClassName("journal-question")[0].innerText;
+                for (let i = 0; i < boxes.length; i++) {
+                    let inps = boxes[i].contentDocument.querySelector("body").querySelector("p")
+                    typeThis(inps, prompt, 40);
+                }
+                if (!set_counter) {
+                    setInterval(() => {
+                        counter += 1000;
+                        //console.log(time_delay - counter);
+                        if (time_delay - counter <= 0) {
+                            for (let i = 0; i < boxes.length; i++) {
+                                let inps = boxes[i].contentDocument.querySelector("body").querySelector("p")
+                                inps.innerText = prompt;
+                                simKey(inps, "enter");
+                                doc.getElementsByClassName("cke_button__bold")[0].click();
+                            }
+                            let inp = boxes[0].contentDocument.querySelector("body").querySelector("p")
+                            if (inp.innerText.length > 0) {
+                                submit_keyword();
+                            }
+                        }
+                    }, 1000);
+                    set_counter = true;
+                }
+                clearInterval(checker);
+            }
+        }
+    }, 1000);
+    let watchout = setInterval(() => {
+        let env = document.getElementsByName("stageFrame")[0].contentWindow;
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let API = false;
+        if (env.API !== undefined) {
+            API = env.API
+        };
+        try {
+            if (API.FrameChain.framesStatus[API.FrameChain.currentFrame - 1] == "complete") {
+                if(API.FrameChain.isComplete()){
+                    API.FrameChain.nextFrame();
+                    clearInterval(watchout);
+                    exit("smart");
+                }
+                try{API.FrameChain.nextFrame()}catch(e){};
+            };
+            if (API.FrameChain.isComplete()) {
+                try{API.FrameChain.nextFrame()}catch(e){};
+                clearInterval(watchout);
+                exit("smart");
+            }
+        } catch (e) {};
+        let status = document.getElementById("activity-status");
+        if (status !== null) {
+            if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                clearInterval(watchout)
+                exit("smart");
+            }
+        };
+    }, 1200);
+}
+
+function typeThis(element, string, typingSpeed) {
+    const words = string.split(' ');
+    words.forEach((word, i) => {
+        setTimeout(() => {
+            element.innerHTML += word + ' ';
+            if (i === words.length - 1) {
+                element.innerHTML = element.innerHTML.trim();
+            }
+        }, i * typingSpeed);
+    });
+}
+
+function submit_keyword() {
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    if (doc.getElementById("SubmitButton") !== null) {
+        let submitBtn = doc.getElementById("SubmitButton");
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("disabled");
+        submitBtn.click();
+    }
+}
+
+
+function ungraded() {
+    let checker = setInterval(async () => {
+        let env = document.getElementsByName("stageFrame")[0].contentWindow;
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let API = false;
+        if (env.API !== undefined) {
+            try{
+                API = env.API;
+                API.Frame.entryAudioFilename = null;
+                API.Frame.exitAudioFilename = null;
+                API.Frame.hasEntryAudioPlayed = true;
+                API.Frame.hasExitAudioPlayed = true;
+            }catch(e){}
+        }
+        if (doc !== null) {
+            if (doc.getElementById("invis-o-div") !== null) {
+                doc.getElementById("invis-o-div").style.display = "none";
+                API.Audio.soundQueue = new Array();
+                API.Audio.callBackQueue = new Array();
+                API.Audio.playing = false;
+                try {
+                    API.Audio.stopAudio()
+                } catch (ex) {};
+            };
+            if (doc.getElementById("main_area") !== null) {
+                if (doc.getElementById("main_area").getElementsByTagName("video")[0] !== undefined) {
+                    let vid = doc.getElementById("main_area").getElementsByTagName("video")[0];
+                    vid.muted = true;
+                    vid.addEventListener("ended", () => {
+                        API.FrameChain.nextFrame()
+                    })
+                    if (!vid.playing) {
+                        vid.play()
+                    };
+                }
+                try {
+                    let quests = getQuests(doc.getElementsByTagName("iframe")[0].contentDocument.querySelector(".content"));
+                    for (let i = 0; i < quests.length; i++) {
+                        let inps = quests[i].formElements;
+                        for (let x = 0; x < inps.length; x++) {
+                            try {
+                                inps[x].elem.click()
+                            } catch (e) {};
+                            try {
+                                inps[x].elem.checked = true
+                            } catch (e) {};
+                            try {
+                                inps[x].elem.getElementsByTagName("option")[0].selected = true
+                            } catch (e) {};
+                            try {
+                                let answers = ["I don't even know","umm... i would be guessing","I honestly don't even know","Something is up with this question"];
+                                let answer = answers[Math.floor(Math.random() * answers.length)]
+                                inps[x].elem.value = answer;
+                            } catch (e) {};
+                        }
+                    }
+                } catch (e) {}
+                try {
+                    tweak()
+                } catch (e) {};
+                try {
+                    checkUp()
+                } catch (e) {};
+                try {
+                    API.FrameChain.nextFrame()
+                } catch (e) {
+                    console.error(e)
+                };
+            }
+        }
+    }, 500);
+    let watchout = setInterval(() => {
+        let env = document.getElementsByName("stageFrame")[0].contentWindow;
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let API = false;
+        if (env.API !== undefined) {
+            API = env.API
+        };
+        try {
+            if (API.FrameChain.framesStatus[API.FrameChain.currentFrame - 1] == "complete") {
+                if(API.FrameChain.isComplete()){
+                    API.FrameChain.nextFrame();
+                    clearInterval(watchout);
+                    exit("smart");
+                }
+                try{API.FrameChain.nextFrame()}catch(e){};
+            };
+            if (API.FrameChain.isComplete()) {
+                try{API.FrameChain.nextFrame()}catch(e){};
+                clearInterval(watchout);
+                exit("smart");
+            }
+        } catch (e) {};
+        let status = document.getElementById("activity-status");
+        if (status !== null) {
+            if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                clearInterval(watchout)
+                exit("smart");
+            }
+        };
+    }, 1200);
+}
+function getQuests(element = document) {
+    const nodes = [element];
+    const results = [];
+    while (nodes.length) {
+        const node = nodes.shift();
+        if (node.nodeType === 1 && node.tagName.toLowerCase() === 'div' && node.hasAttribute('fstack')) {
+            const formElements = [];
+            const addFormElements = (node) => {
+                for (let i = 0; i < node.children.length; i++) {
+                    if (node.children[i].nodeType === 1 && ['input', 'textarea', 'select'].includes(node.children[i].tagName.toLowerCase())) {
+                        formElements.push({
+                            type: node.children[i].tagName.toLowerCase(),
+                            value: node.children[i].value,
+                            name: node.children[i].name,
+                            elem: node.children[i]
+                        });
+                    }
+                    addFormElements(node.children[i]);
+                }
+            };
+            addFormElements(node);
+            results.push({
+                div: node,
+                formElements: formElements,
+            });
+        }
+        for (let i = 0; i < node.children.length; i++) {
+            nodes.push(node.children[i]);
+        }
+    }
+    return results;
+}
+
+
+
+function checkUp() {
+    let env = document.getElementsByName("stageFrame")[0].contentWindow;
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    let API = false;
+    if (env.API !== undefined) {
+        API = env.API
+    };
+    if ($("#stageFrame").contents().find("iframe").contents().find("iframe").contents().find(".uibtn").length > 0) {
+        let btns = $("#stageFrame").contents().find("iframe").contents().find("iframe").contents().find(".uibtn");
+        for (let i = 0; i < btns.length; i++) {
+            btns[i].classList.remove("disabled");
+            btns[i].disabled = false;
+            if (btns[i].className.toLowerCase().includes("button") || btns[i].innerText.toLowerCase().trim().replaceAll(" ", "").includes("check")) {
+                btns[i].click();
+            }
+        }
+    }
+    if ($("#stageFrame").contents().find("#btnCheck").length > 0) {
+        let btns = $("#stageFrame").contents().find("#btnCheck");
+        for (let i = 0; i < btns.length; i++) {
+            btns[i].click();
+        }
+    }
+    try {
+        if (document.getElementsByName("stageFrame")[0].contentDocument
+            .getElementsByTagName("iframe")[0].contentDocument.querySelector(".content") !== null) {
+            let quests = document.getElementsByName("stageFrame")[0].contentDocument
+            .getElementsByTagName("iframe")[0].contentDocument.querySelector(".content")
+            .querySelectorAll("[fdone]:not(.done-complete)");
+            for (let i = 0; i < quests.length; i++) {
+                quests[i].click()
+            };
+        }
+    } catch (e) {};
+    try {
+        API.Frame.check()
+    } catch (e) {};
+    try {
+        API.Frame.completeTask(API.Frame.StackProgress[0].TaskProgress[0].Guid)
+    } catch (e) {};
+}
+
+
+function tweak() {
+    let env = document.getElementsByName("stageFrame")[0].contentWindow;
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    let API = false;
+    if (env.API !== undefined) {
+        API = env.API
+    };
+    try {
+        doc.getElementsByClassName("right-column")[0].children[0].style.display = "block";
+    } catch (TypeError) {}
+    try {
+        doc.getElementsByClassName("left-column")[0].children[0].style.display = "block";
+    } catch (TypeError) {};
+    try {
+        $("#stageFrame").contents().find("iframe").contents().find(".content").contents().find("input")[Math.floor($("#stageFrame").contents().find("iframe").contents().find(".content").contents().find("input").length * Math.random())].click()
+    } catch (e) {}
+    setTimeout(() => {
+        try {
+            $("#stageFrame").contents().find("iframe").contents().find(".content").contents().find("input")[Math.floor($("#stageFrame").contents().find("iframe").contents().find(".content").contents().find("input").length * Math.random())].click();
+        } catch (e) {}
+        if ($("#stageFrame").contents().find("iframe").contents().find(".content").contents().find("input").length > 0) {
+            let inps = $("#stageFrame").contents().find("iframe").contents().find(".content").contents().find("input");
+            for (let i = 0; i < inps.length; i++) {
+                let numbers = "123456789";
+                let letters = "abcdefghijklmnop";
+                inps[i].value = numbers[Math.floor(Math.random() * numbers.length)] + letters[Math.floor(Math.random() * letters.length)];
+            }
+        }
+        if ($("#stageFrame").contents().find("iframe").contents().find("iframe").contents().find("select").length > 0) {
+            let opBox = $("#stageFrame").contents().find("iframe").contents().find("iframe").contents().find("select");
+            for (let i = 0; i < opBox.length; i++) {
+                let ops = opBox[i].options;
+                for (let j = 0; j < ops.length; j++) {
+                    ops[j].selected = true;
+                    checkUp();
+                }
+            }
+        }
+        checkUp();
+    }, 1000);
+}
+
+
+let test_timer_set = false;
+async function deep(menu, activity) {
+    console.log("deep launched")
+    _Contents();
+    let set_interval = false;
+    let checker = setInterval(async () => {
+        let env = document.getElementsByName("stageFrame")[0].contentWindow;
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let lesson = document.getElementById("lesson-title").innerText;
+        let allowed_auto = await GM_getValue("allow_test_auto");
+        if (doc !== null) {
+            let activity_open_persist = setInterval(()=>{
+                if (doc.getElementsByClassName("overlay-attempt overlay-attempt-clickable")[0] !== undefined) {
+                    if(allowed_auto==true){
+                        doc.getElementsByClassName("overlay-attempt overlay-attempt-clickable")[0].click();
+                        //clearInterval(activity_open_persist);
+                    }
+                }
+            },500)
+            if(allowed_auto==true){
+                create_timer(menu, activity);
+                test_timer_set = true;
+            }
+            let change_state = document.createElement("button");
+            if(allowed_auto==undefined){
+                change_state.innerText = "Enable Full Auto";
+            }else if(allowed_auto==true){
+                change_state.innerText = "Disable Full Auto";
+            }
+            change_state.addEventListener("click",async()=>{
+                let current_state = await GM_getValue("allow_test_auto");
+                if(current_state==undefined){
+                    let check = confirm("\nThis is experimental & has a chance of messing up. 😵\n\nWe suggest that you moniter it here and there.\n\nClick OK if you wish to continue... 🟢");
+                    if(check){
+                        GM_setValue("allow_test_auto",true);
+                        if(!test_timer_set){create_timer(menu, activity)};
+                        change_state.innerText = "Disable Full Auto";
+                    }
+                }else if(current_state==true){
+                    GM_deleteValue("allow_test_auto");
+                    if(document.getElementById("edgyBot_user_delay")!==null){document.getElementById("edgyBot_user_delay").remove()};
+                    change_state.innerText = "Enable Full Auto";
+                }
+            })
+            change_state.style = "padding:5px;border:none;border-radius:5px;height:30px;outline:none;cursor:pointer;width:200px;color:black;display:flex;justify-content:center;align-items:center;text-align:center;margin-right:10px;";
+            menu.append(change_state);
+            clearInterval(checker);
+        }
+    }, 500);
+    let watchOut = setInterval(() => {
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let status = document.getElementById("activity-status");
+        if (status !== null) {
+            if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                if(doc!==null){
+                    if (doc.getElementsByClassName("overlay-attempt overlay-attempt-clickable")[0] == undefined){
+                        clearInterval(watchOut);
+                        exit("smart");
+                    }
+                }
+                else{
+                    clearInterval(watchOut);
+                    exit("smart");
+                }
+            }
+        };
+    }, 1200);
+}
+
+let sewage = false;
+let leaking = false;
+async function leaky_pipes(currQuest){
+    if(document.getElementById("itac_")!==null){
+        document.getElementById("itac_").src="https://raw.githubusercontent.com/GSRHackZ/EdgyBot_Edgenuity_Bot/main/assets/databones.png";
+        document.getElementById("itac_").data="databones_";
+    }
+    let allowed_auto = await GM_getValue("allow_test_auto");
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    let labels = currQuest.querySelectorAll(".answer-choice-label[for]");
+    let selects = currQuest.getElementsByTagName("select");
+    let answered = false;
+    if(sewage==false){
+        let response = await fetch('https://edgybot-gsrhackz.web.app/pages/correct.txt');
+        let data = await response.text();
+        sewage = data;
+        let result = await determine_answer(data);
+        return result;
+    }else{
+        let result = await determine_answer(sewage);
+        return result;
+    };
+
+    async function determine_answer(answer_array){
+        let answered = false;
+        for(let answerChoiceLabel of labels) {
+            const labelFor = answerChoiceLabel.getAttribute("for").trim();
+            if (answer_array.includes(labelFor)) {
+                answerChoiceLabel.click();
+                answered = true;
+            }
+        }
+        for(let i=0;i<selects.length;i++){
+            let options = selects[i].getElementsByTagName("option");
+            let possible = [];
+            for(let x=0;x<options.length;x++){
+                let option_id = options[x].id;
+                if(option_id.length>0){
+                    if(answer_array.includes(option_id)){
+                        answered = true;
+                        options[x].selected = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return answered;
+    }
+}
+
+
+let main_cycle,quest_cycle;
+async function _Contents(){
+    console.clear();
+    console.log("Contents running");
+    let curr_id = "";
+    main_cycle = setInterval(async ()=>{
+        let allowed_auto = await GM_getValue("allow_test_auto");
+        if(document.getElementsByName("stageFrame")[0]!==undefined){
+            let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+            if(doc!==null){
+                let navList = doc.getElementById("navBtnList");
+                if(navList!==null){
+                    let quest_btns = getQuest_btns(navList.children);
+                    if(quest_btns.length>0){
+                        let current = getCurr_quest(quest_btns);
+                        if(current!==false){
+                            let id = current.id;
+                            if(curr_id!==id){
+                                curr_id = id;
+                                console.clear();
+                                let index = Number(current.innerText)-1;
+                                let display = doc.getElementsByClassName("question-container")[0];
+                                let currQuest = display.children[index];
+                                console.log(`current quest determined... ${index+1}`);
+                                console.log("starting search_answer cycle...");
+                                quest_cycle = setInterval(async()=>{
+                                    if(currQuest.children.length>0){
+                                        let ran_leaky = await leaky_pipes(currQuest);
+                                        if(ran_leaky==true&&currQuest.getElementsByTagName("textarea")[0]==undefined){
+                                            clearInterval(quest_cycle);
+                                            if(allowed_auto==true){
+                                                if(test_submit_check(quest_btns)==false){
+                                                    nxtQuest();
+                                                }
+                                            }
+                                        }
+                                        else{
+                                            let contents = currQuest.innerText.replaceAll("\n","").replaceAll("\t","");
+                                            let imgs = currQuest.getElementsByTagName("img");
+                                            if(clean(contents).length>0){
+                                                console.log(`Question [${index+1}] contents have been determined:\n\n${contents}\n\nInitiating cleanup & search sequence...`);
+                                                let before = "";
+                                                let choices = [];
+                                                let buttons = [];
+                                                let img_data = [];
+                                                for(let i=0;i<imgs.length;i++){
+                                                    if(imgs[i].alt!==undefined){
+                                                        if(clean(imgs[i].alt).length>0){
+                                                            img_data.push(imgs[i].alt);
+                                                        }
+                                                    }
+                                                }
+                                                if(!contents.includes("ABCD")){
+                                                    if(contents.includes("TF")){before="True or False:"}else{
+                                                        let textareas = currQuest.getElementsByTagName("textarea");
+                                                        let select = currQuest.getElementsByTagName("select");
+                                                        if(textareas[0]!==undefined){console.log("Question format: Text Box")}
+                                                        else if(select[0]!==undefined){
+                                                            console.log("Question format: Select Box");
+                                                            let options = select[0].getElementsByTagName("option");
+                                                            for(let i=0;i<options.length;i++){
+                                                                if(options[i].innerText.replaceAll(" ","").length>0){
+                                                                    choices.push(options[i].innerText)
+                                                                    buttons.push(options[i]);
+                                                                }
+                                                            }
+                                                        }
+                                                    };
+                                                    if(buttons.length==0&&choices.length==0){
+                                                        if(currQuest.getElementsByClassName("answer-choice")[0]!==undefined){
+                                                            let choices_btns = currQuest.getElementsByClassName("answer-choice");
+                                                            for(let i=0;i<choices_btns.length;i++){
+                                                                choices.push(choices_btns[i].innerText.replaceAll("\n","").replaceAll("\t",""));
+                                                                buttons.push(choices_btns[i].getElementsByClassName("answer-choice-button")[0]);
+                                                            }
+                                                        }
+                                                    }
+                                                }else{
+                                                    if(currQuest.getElementsByTagName("tbody")[0]!==undefined){
+                                                        if(currQuest.getElementsByTagName("tbody")[0].children[0]!==undefined){
+                                                            choices = getChoices_inOrder(currQuest.getElementsByTagName("tbody")[0].innerText,false);
+                                                            console.log(currQuest.getElementsByTagName("tbody")[0].getElementsByTagName("td"))
+                                                            let clicks = currQuest.getElementsByClassName("answer-choice");
+                                                            for(let i=0;i<clicks.length;i++){
+                                                                buttons.push(clicks[i].getElementsByClassName("answer-choice-button")[0]);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                GM_deleteValue("all_bing_found");
+                                                GM_deleteValue("bing_answer");
+                                                GM_deleteValue("bing_search_state");
+                                                if(choices.length>0){console.log(`Question format & choices determined...\n\nChoices: ${choices}\n\nButtons: ${buttons}`)};
+                                                console.log("Search has been inititiated, now listening for answers...");
+                                                if(document.getElementsByClassName("edgybot_portal")[0]!==undefined){document.getElementsByClassName("edgybot_portal")[0].remove()};
+                                                let iframe = document.createElement("iframe");
+                                                iframe.className = "edgybot_portal";
+                                                let search_query = `https://www.bing.com/search?q=${encodeURIComponent(before+contents.replaceAll("_","").split("Answers from online:")[0])}`.trim();
+                                                iframe.src = search_query;
+                                                document.body.append(iframe);
+                                                let answers = [];
+                                                let repeats = 0;
+                                                let false_repeats = 0;
+                                                setTimeout(()=>{
+                                                    let await_answer = setInterval(async()=>{
+                                                        let bing_answers = await GM_getValue("bing_answer");
+                                                        let temp = [];
+                                                        if(bing_answers!==undefined){
+                                                            if(bing_answers.length>0){
+                                                                for(let i=0;i<bing_answers.length;i++){
+                                                                    let answer = bing_answers[i];
+                                                                    if(!answers.includes(answer)){
+                                                                        answers.push(answer);
+                                                                    }
+                                                                    if(!temp.includes(answer)){
+                                                                        temp.push(answer);
+                                                                    }
+                                                                }
+                                                                if(JSON.stringify(answers)==JSON.stringify(temp)){
+                                                                    repeats+=1;
+                                                                }
+                                                                if(repeats>=5){
+                                                                    try{iframe.remove()}catch(e){};
+                                                                    clearInterval(await_answer);
+                                                                    console.log("repetition max has been hit. Answers below...");
+                                                                    console.log(bing_answers);
+                                                                    displayAnswer(bing_answers,search_query,currQuest,choices,buttons,quest_btns);
+                                                                }
+                                                            }else{
+                                                                false_repeats+=1;
+                                                                if(false_repeats>=5){
+                                                                    try{iframe.remove()}catch(e){};
+                                                                    clearInterval(await_answer);
+                                                                    console.log("false repetition max has been hit. Closing search session...");
+                                                                    //alert("Question needs to be manually searched");
+                                                                    displayAnswer(bing_answers,search_query,currQuest,choices,buttons,quest_btns);
+                                                                }
+                                                            }
+                                                        }
+                                                    },1000);
+                                                },2500);
+                                                clearInterval(quest_cycle);
+                                            }
+                                        }
+                                    }
+                                },300);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },1000);
+}
+
+
+
+async function displayAnswer(answers,search_query,currQuest,choices,buttons,quest_btns){
+    let textareas = currQuest.getElementsByTagName("textarea");
+    let allowed_auto = await GM_getValue("allow_test_auto");
+    if(textareas[0]!==undefined){
+        let answers_txt = answers;
+        if(answers_txt.length==0){answers_txt=["i'm not sure about this one","would be guessing tbh..."]}
+        for(let i=0;i<textareas.length;i++){
+            textareas[i].value = answers.join(" ").replaceAll("…",".");
+            textareas[i].dispatchEvent(new Event("keyup"));
+            if(allowed_auto==true){
+                nxtQuest();
+            }
+        }
+    }
+    else{
+        let display = document.createElement("div");
+        display.innerHTML = `<h4>Answers from online:</h4><br>`;
+        for(let i=0;i<answers.length;i++){
+            let answer = document.createElement("p");
+            answer.innerText = answers[i];
+            display.append(answer);
+        }
+        display.style="margin-top:30px;margin-bottom:20px;";
+        currQuest.append(display);
+        //determine_answer(answers,choices,buttons,currQuest);
+    }
+    if(allowed_auto==true){
+        test_submit_check(quest_btns);
+    }
+}
+
+
+function determine_answer(answer_array,choices,btns,currQuest){
+    let answer_index_send = 1;
+    if(answer_array!==false&&answer_array.length>0){
+        answer_array = answer_array.map(answer => answer.toLowerCase());
+        choices = choices.map(choice => choice.toLowerCase());
+
+        // Add the n-gram comparison method
+        function generateNgrams(wordsArray, n) {
+            let ngrams = [];
+            for (let i = 0; i < wordsArray.length - n + 1; i++) {
+                ngrams.push(wordsArray.slice(i, i + n).join(' '));
+            }
+            return ngrams;
+        }
+
+        function ngramSimilarity(a, b, n) {
+            let a_ngrams = generateNgrams(a, n);
+            let b_ngrams = generateNgrams(b, n);
+            let matches = 0;
+            for (let a_ngram of a_ngrams) {
+                for (let b_ngram of b_ngrams) {
+                    if (a_ngram === b_ngram) {
+                        matches++;
+                    }
+                }
+            }
+            return matches;
+        }
+
+        // Add weight constants
+        const exact_match_weight = 5;
+        const partial_match_weight = 2;
+        const ngram_match_weight = 1;
+        const letter_answer_weight = 4;
+        const combined_letter_word_weight = 3;
+
+        // 1. Add a Levenshtein distance scoring method
+        function levenshteinDistance(a, b) {
+            const matrix = [];
+            let i, j;
+
+            for (i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+
+            for (j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+
+            for (i = 1; i <= b.length; i++) {
+                for (j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+                    }
+                }
+            }
+
+            return matrix[b.length][a.length];
+        }
+
+        let levenshtein_scores = choices.map(choice => {
+            let scores = answer_array.map(answer => levenshteinDistance(clean(answer), clean(choice)));
+            return Math.min(...scores);
+        });
+
+
+        //answer_count scoring
+        let answer_rep = answer_array.map(answer => clean(answer));
+        let choice_rep = choices.map(choice => clean(choice));
+        let index_rep = mode(answer_rep);
+        let add_rep = 2;
+        let choice_index_rep = [];
+        if(choices.length>2){
+            for(let i=0;i<choice_rep.length;i++){
+                if(choice_rep[i].includes(index_rep)||index_rep.includes(choice_rep[i])){
+                    choice_index_rep.push(i);
+                }
+            }
+        }
+        //letter_present scoring
+        let letter_array = [];
+        for(let i=0;i<answer_array.length;i++){
+            if(answer_array[i]!==undefined&&answer_array[i].length>0){
+                let cleaned = clean(answer_array[i]).trim();
+                let usable = answer_array[i].toLowerCase().replaceAll(" ","").trim();
+                let letters = "abcdtf";
+                if(cleaned.length==1){
+                    if(letters.includes(cleaned)){
+                        letter_array.push(cleaned);
+                        //answer_array.splice(i,1);
+                    }
+                }
+                if(usable.includes("a.")||usable.includes("a)")||usable.includes("b.")||usable.includes("b)")||usable.includes("c.")||usable.includes("c)")||usable.includes("d.")||usable.includes("d)")||usable.includes("d:")||usable.includes("c:")||usable.includes("b:")||usable.includes("a:")){
+                    if(!usable.endsWith("a.")&&!usable.endsWith("b.")&&!usable.endsWith("c.")&&!usable.endsWith("d.")){
+                        if(usable.includes("d.")||usable.includes("d)")||usable.includes("d:")){letter_array.push("d");answer_array.splice(i,1);}
+                        else if(usable.includes("c.")||usable.includes("c)")||usable.includes("c:")){letter_array.push("c");answer_array.splice(i,1);}
+                        else if(usable.includes("b.")||usable.includes("b)")||usable.includes("b:")){letter_array.push("b");answer_array.splice(i,1);}
+                        else if(usable.includes("a.")||usable.includes("a)")||usable.includes("a:")){letter_array.push("a");answer_array.splice(i,1);}
+                    }
+                }
+            }
+        }
+
+        let boolean_array = [];
+        for(let i=0;i<answer_array.length;i++){
+            let elem = answer_array[i];
+            if(elem.includes("true")){
+                if(elem.includes("not true")){
+                    boolean_array.push("f");
+                }else{
+                    boolean_array.push("t");
+                }
+            }else if(elem.includes("false")){
+                if(elem.includes("not false")){
+                    boolean_array.push("t")
+                }else{
+                    boolean_array.push("f");
+                }
+            }
+        }
+        //words_included scoring
+        let inc_array = [];
+        for(let i=0;i<choices.length;i++){
+            let cleaned_choice = clean(choices[i]);
+            for(let x=0;x<answer_array.length;x++){
+                let cleaned_answer = clean(answer_array[x]);
+                if(cleaned_choice.length>0&&cleaned_answer.length>0){
+                    if(cleaned_answer.includes(cleaned_choice)||cleaned_choice.includes(cleaned_answer)){
+                        inc_array.push(choices[i]);
+                    }
+                }
+            }
+        }
+        // Calculate the frequency of each answer
+        let answer_freq = {};
+        for (let answer of answer_array) {
+            let cleaned_answer = clean(answer);
+            if (cleaned_answer in answer_freq) {
+                answer_freq[cleaned_answer] += 1;
+            } else {
+                answer_freq[cleaned_answer] = 1;
+            }
+        }
+
+        let split_choices = [], split_answers = [];
+        for (let i = 0; i < answer_array.length; i++) {
+            split_answers.push(answer_array[i].toLowerCase().trim().split(" "));
+        }
+        for (let i = 0; i < choices.length; i++) {
+            split_choices.push({ "score": 0, "choice": choices[i].toLowerCase().trim().split(" ") });
+        }
+
+        // Exact match scoring
+        for (let j = 0; j < split_choices.length; j++) {
+            let cleaned_choice = clean(choices[j]);
+            if (cleaned_choice in answer_freq) {
+                // Add score based on the frequency of the exact match
+                let freq = answer_freq[cleaned_choice];
+                split_choices[j].score += 5 * freq;
+            }
+        }
+
+        // Boost score for "all of the above" when appropriate
+        let all_above_choice = split_choices.findIndex(choice => clean(choice.choice.join(" ")).toLowerCase().includes("alloftheabove"));
+        if (all_above_choice !== -1) {
+            let all_choices_present = true;
+            let choice_present_counts = {};
+            for (let i = 0; i < split_choices.length - 1; i++) { // Exclude the last choice (all of the above)
+                let cleaned_choice = clean(choices[i]);
+                let choice_present = false;
+                for (let given_answer in answer_freq) {
+                    if (cleaned_choice === given_answer) {
+                        choice_present = true;
+                        choice_present_counts[cleaned_choice] = answer_freq[given_answer];
+                        break;
+                    }
+                }
+                if (!choice_present) {
+                    all_choices_present = false;
+                    break;
+                }
+            }
+            if (all_choices_present) {
+                // Check if the given answers contain all of the above or all the answer choices except for the last one
+                let all_above_present = false;
+                for (let given_answer in answer_freq) {
+                    if (clean(given_answer).toLowerCase().includes("alloftheabove")) {
+                        all_above_present = true;
+                        break;
+                    }
+                }
+                if (all_above_present) {
+                    // Give a significant score boost to the "all of the above" answer choice
+                    split_choices[all_above_choice].score += 30;
+                } else {
+                    // Check if the counts for all answer choices are the same
+                    let same_counts = true;
+                    let prev_count = -1;
+                    for (let choice in choice_present_counts) {
+                        if (prev_count === -1) {
+                            prev_count = choice_present_counts[choice];
+                        } else if (prev_count !== choice_present_counts[choice]) {
+                            same_counts = false;
+                            break;
+                        }
+                    }
+                    if (same_counts) {
+                        // Give a significant score boost to the "all of the above" answer choice
+                        split_choices[all_above_choice].score += 30;
+                    }
+                }
+            }
+        }
+        let letter_score_array = new Array(choices.length).fill(0);
+        let combined_letter_word_score_array = new Array(choices.length).fill(0);
+
+        // Word count scoring
+        for (let i = 0; i < split_answers.length; i++) {
+            let arr = split_answers[i];
+            if (arr.length > 1) {
+                for (let x = 0; x < arr.length; x++) {
+                    let item = clean(arr[x]);
+                    for (let j = 0; j < split_choices.length; j++) {
+                        let arr_sec = split_choices[j].choice;
+                        for (let k = 0; k < arr_sec.length; k++) {
+                            let item_sec = clean(arr_sec[k]);
+                            if (item_sec === item) {
+                                // Add score based on the frequency of the answer
+                                let freq = answer_freq[item] || 1;
+                                split_choices[j].score += exact_match_weight * freq;
+                                // Give additional score for exact matches in the correct position
+                                if (x === k) {
+                                    split_choices[j].score += exact_match_weight;
+                                }
+                                // Check if the answer is a letter answer with additional words
+                                if ("abcdtf".includes(item) && arr.length > 1) {
+                                    combined_letter_word_score_array[j] += combined_letter_word_weight * freq;
+                                }
+                            } else if (item_sec.includes(item) || item.includes(item_sec)) {
+                                if (item.length !== 1) {
+                                    split_choices[j].score += partial_match_weight;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add a new constant at the beginning of the function
+        const letter_score_weight = 1.5;
+        // Combine the scores after the loop
+        for (let j = 0; j < split_choices.length; j++) {
+            split_choices[j].score += letter_score_weight * letter_score_array[j];
+            split_choices[j].score += combined_letter_word_score_array[j];
+        }
+
+        // N-gram scoring
+        for (let i = 0; i < split_answers.length; i++) {
+            let arr = split_answers[i];
+            for (let j = 0; j < split_choices.length; j++) {
+                let arr_sec = split_choices[j].choice;
+                let ngram_matches = ngramSimilarity(arr, arr_sec, 2); // Using bigrams
+                split_choices[j].score += ngram_match_weight * ngram_matches;
+            }
+        }
+        let letter_answer = mode(letter_array);
+        let boolean_answer = mode(boolean_array.concat(letter_array));
+        let inc_answer = mode(inc_array);
+        if(choices.length==2){letter_answer = boolean_answer};
+        if (letter_answer !== null) {
+            letter_answer = letter_answer.toLowerCase();
+        }
+        let letters = "abcd";
+        let t_f = "tf";
+        if (choices.length == 2) { letters = t_f; }
+        if (letter_answer !== null) {
+            if (letters.indexOf(letter_answer) !== -1) {
+                if (split_choices[letters.indexOf(letter_answer)] !== undefined) {
+                    // Add a significant score boost to the letter_present answer choice
+                    split_choices[letters.indexOf(letter_answer)].score += 500;
+                }
+            }
+        }
+        if(inc_answer!==null){
+            split_choices[choices.indexOf(inc_answer)].score+=(split_choices[choices.indexOf(inc_answer)].score*3)+1;
+        }
+        if(choice_index_rep.length>0){
+            for(let i=0;i<choice_index_rep.length;i++){
+                split_choices[choice_index_rep[i]].score+=add_rep;
+            }
+        }
+        let best_fit = false;
+        let best_score = 0;
+        for(let i=0;i<split_choices.length;i++){
+            if(split_choices[i].score>best_score){
+                best_score=split_choices[i].score;
+                best_fit = i;
+            }
+        }
+        answer_index_send = best_fit;
+        console.log(split_choices);
+        let multi_solution = multiAnswer_support(split_choices);
+        if(btns[0]!==undefined){
+            if(btns[0].type=="checkbox"){
+                for(let i=0;i<multi_solution.length;i++){
+                    btns[Number(multi_solution[i])].click();
+                    console.log(btns[Number(multi_solution[i])].parentElement.innerText);
+                }
+            }
+        }
+        //console.log(answer_index_send);
+        //try{console.log(`The answer is ${answer_index_send+1} with a score of ${best_score}\n\n${split_choices[best_fit].choice}`)}catch(e){};
+        auto_answer(answer_index_send,btns,currQuest,answer_array);
+    }else{
+        console.log("No answer found...");
+        auto_answer(answer_index_send,btns,currQuest,answer_array);
+    }
+}
+
+function multiAnswer_support(arr) {
+    const averageScore = arr.reduce((acc, obj) => acc + obj.score, 0) / arr.length;
+    const highScoringObjects = arr.filter(obj => obj.score > averageScore);
+    const highScoringChoiceNumbers = highScoringObjects.map((obj, index) => index);
+    return highScoringChoiceNumbers;
+}
+
+function mode(array)
+{
+    if(array.length == 0)
+        return null;
+    var modeMap = {};
+    var maxEl = array[0], maxCount = 1;
+    for(var i = 0; i < array.length; i++)
+    {
+        var el = array[i];
+        if(modeMap[el] == null)
+            modeMap[el] = 1;
+        else
+            modeMap[el]++;
+        if(modeMap[el] > maxCount)
+        {
+            maxEl = el;
+            maxCount = modeMap[el];
+        }
+    }
+    return maxEl;
+}
+
+
+async function auto_answer(answer,inp,currQuest,answer_array){
+    //console.log(answer,inp,currQuest,answer_array);
+    try{
+        if(inp==false||inp.length==0||inp==undefined||inp==null){
+            console.log("This is most likely a text_box, select box, or new input type");
+            let textareas = currQuest.getElementsByTagName("textarea");
+            let select = currQuest.getElementsByTagName("select");
+            let input = currQuest.getElementsByTagName("input");
+            if(input[0]!==undefined){
+                for(let i=0;i<input.length;i++){
+                    if(input[i].type=="text"){
+                        input[i].value=answer;
+                        input[i].dispatchEvent(new Event("keyup"));
+                    }
+                }
+            }
+            if(textareas[0]!==undefined){
+                console.log("Determined that this is a textarea, answering...");
+                //debugger;
+                for(let i=0;i<textareas.length;i++){
+                    console.log(textareas[i]);
+                    textareas[i].value = answer_array.join(" ").replaceAll("…",".");
+                    textareas[i].dispatchEvent(new Event("keyup"));
+                }
+            }
+            if(select[0]!==undefined){
+                console.log("Determined that this is a select box, answering...")
+                let options = select[0].getElementsByTagName("option");
+                let temp = [];for(let i=0;i<options.length;i++){if(clean(options[i].innerText).length>0){temp.push(options[i])}};
+                options = temp;
+                options[answer].selected = true;
+            }
+            try{inp[answer].click()}catch(e){};
+            try{currQuest.getElementsByClassName("answer-choice")[answer].getElementsByClassName("answer-choice-button")[0].click()}catch(e){};
+            let allowed_auto = await GM_getValue("allow_test_auto");
+            if(allowed_auto==true){
+                nxtQuest();
+            }
+        }
+        else{
+            let select = currQuest.getElementsByTagName("select");
+            if(select[0]!==undefined){
+                console.log("Determined that this is a select box, answering...");
+                console.log(inp.innerText)
+                let options = inp;
+                options[answer].selected = true;
+            }
+            console.log(`Answer: ${answer+1}`);
+            console.log(inp)
+            if(inp[answer]==undefined){
+                answer=1;
+            }
+            inp[answer].click();
+            try{currQuest.getElementsByClassName("answer-choice")[answer].getElementsByClassName("answer-choice-button")[0].click()}catch(e){};
+            let allowed_auto = await GM_getValue("allow_test_auto");
+            if(allowed_auto==true){
+                nxtQuest();
+            }
+        }
+    }catch(e){console.log(e);console.log("error auto answering... will be fixed in future update")}
+}
+
+
+function test_submit_check(quest_btns){
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    if(quest_btns[0].parentElement.getElementsByClassName("plainbtn alt icon yellow").length==quest_btns.length){
+        let submit = doc.getElementsByClassName("uibtn uibtn-blue uibtn-med uibtn-alt")[0];
+        if(submit!==undefined){
+            submit.click();
+            setTimeout(()=>{
+                let activity = document.getElementById("activity-title").innerText;
+                if (activity.indexOf(':') != -1) {
+                    activity = clean(activity.substring(0, activity.indexOf(':')))
+                } else {
+                    activity = clean(activity)
+                };
+                let def = `Are you sure you have completed this activity?\nCancel OK`;
+                let confirm = doc.getElementById("submitConfirmMessage");
+                let counter_test_time = 0;
+                let time_delay = 60000;
+                setInterval(async () => {
+                    let hourglass = await GM_getValue("timer_settings");
+                    if (hourglass !== undefined) {
+                        for (let i = 0; i < hourglass.length; i++) {
+                            if (hourglass[i].activity == activity) {
+                                time_delay = 60000 * hourglass[i].delay;
+                                let extra = "minute";
+                                if (hourglass[i].delay > 1) {
+                                    extra = "minutes"
+                                };
+                                break;
+                            }
+                        }
+                    }
+                }, 1000);
+                let timer_edgy_display = document.createElement("h4");
+                let submit_delay = setInterval(()=>{
+                    if(document.getElementById("lessonInfo").getElementsByClassName("timer_edgy_display")[0]==undefined){
+                        timer_edgy_display.className = "timer_edgy_display"
+                        timer_edgy_display.style="color:white;float:right;"
+                        document.getElementById("lessonInfo").append(timer_edgy_display);
+                    }
+                    counter_test_time+=1000;
+                    timer_edgy_display.innerText = `Submitting in: ${Math.floor(((time_delay-counter_test_time)/60000)*60)} seconds  ◕‿◕`;
+                    if(counter_test_time>=time_delay){
+                        clearInterval(submit_delay);
+                        confirm.getElementsByClassName("uibtn uibtn-blue uibtn-med submit")[0].click();
+                    }
+                    console.log(time_delay)
+                    console.log(counter_test_time);
+                    console.log(Math.floor(((time_delay-counter_test_time)/60000)*60));
+                },1000);
+            },1000)
+        }
+        try{clearInterval(main_cycle)}catch(e){};
+    }else{
+        return false;
+    }
+}
+
+
+let set_listen = false;
+function nxtQuest() {
+    let env = document.getElementsByName("stageFrame")[0].contentWindow;
+    let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+    setTimeout(() => {
+        if(!set_listen){
+            doc.getElementById("nextQuestion").addEventListener("click",()=>{
+                try{clearInterval(quest_cycle)}catch(e){};
+            })
+            set_listen = true;
+        }
+        doc.getElementById("nextQuestion").click();
+    }, 800);
+}
+
+
+function getChoices_inOrder(str,mop){
+    str = str.toLowerCase().replaceAll("\n","").replaceAll("\t","").trim();
+    let a = str.split("a.")[1].split("c.")[0].split("b.")[0];
+    let b = str.split("b.")[1].split("c.")[0].split("d.")[0];
+    let c = str.split("c.")[1].split("b.")[0].split("d.")[0];
+    let d = str.split("d.")[1];
+    let choices = [a,b,c,d];
+    let temp = [];
+    for(let i=0;i<choices.length;i++){
+        if(clean(choices[i].replaceAll(" ","").replaceAll("\t","").replaceAll("\n","")).length>0){
+            let string = choices[i].replaceAll("\t","").replaceAll("\n","").trim();
+            if(mop){temp.push(clean(string))}
+            else{temp.push(string)};
+        }
+    }
+    return temp;
+}
+
+
+
+
+function getChoice_content(arr,mop){
+    let temp = [];
+    for(let i=0;i<arr.length;i++){
+        if(mop){temp.push(clean(arr[i].innerText))}
+        else{temp.push(arr[i].innerText)};
+    }
+    return temp;
+}
+
+function getCurr_quest(arr){
+    for(let i=0;i<arr.length;i++){
+        if(arr[i].getElementsByClassName("selected")[0]!==undefined){
+            return arr[i];
+            break;
+        }
+    }
+    return false;
+}
+
+function getQuest_btns(arr){
+    let temp = [];
+    for(let i=0;i<arr.length;i++){
+        if(arr[i].innerText.replaceAll(" ","").replaceAll("\n","").replaceAll("\t","").length>0){
+            temp.push(arr[i]);
+        }
+    }
+    return temp;
+}
+
+
+async function create_timer(menu, activity) {
+    let time_select = document.createElement("select");
+    time_select.id = "edgyBot_user_delay";
+    time_select.title = "Activity Submit Delay";
+    time_select.innerHTML = `
+                        <option style="color:black" value="def_op">Activity Submit Delay ⏳</option>
+                        <option style="color:black" value=1>1 minute (default)</option>
+                        <option style="color:black" value=5>5 minutes</option>
+                        <option style="color:black" value=15>15 minutes</option>
+                        <option style="color:black" value=25>25 minutes</option>
+                        <option style="color:black" value=35>35 minutes</option>
+                        <option style="color:black" value=45>45 minutes</option>
+                        <option style="color:black" value=55>55 minutes</option>
+                        <option style="color:black" value=0>No Delay (Not recommended)</option>
+                    `;
+    time_select.style = `width:250px;height:30px;cursor:pointer;outline:none;margin-right:25px;padding:5px;border-radius:3px;`;
+    let hourglass = await GM_getValue("timer_settings");
+    time_select.addEventListener("change", async (event) => {
+        const selectedTime = event.target.value;
+        if (selectedTime !== "def_op") {
+            hourglass = await GM_getValue("timer_settings");
+            let add = true;
+            if (hourglass !== undefined) {
+                for (let i = 0; i < hourglass.length; i++) {
+                    if (hourglass[i].activity == activity) {
+                        hourglass[i] = {
+                            "activity": activity,
+                            "delay": selectedTime
+                        };
+                        add = false;
+                    }
+                }
+                if (add) {
+                    hourglass.push({
+                        "activity": activity,
+                        "delay": selectedTime
+                    })
+                };
+            } else {
+                hourglass = [{
+                    "activity": activity,
+                    "delay": selectedTime
+                }];
+            }
+            GM_setValue("timer_settings", hourglass);
+        }
+    });
+    if (hourglass !== undefined) {
+        for (let i = 0; i < hourglass.length; i++) {
+            if (hourglass[i].activity == activity) {
+                time_select.value = hourglass[i].delay;
+                break;
+            }
+        }
+    }
+    menu.append(time_select);
+}
+
+function getBg(menu) {
+    let ask = prompt("\nEnter Image address below for image you want as wallpaper 🎨\n");
+    if (ask) {
+        if (ask.trim().length > 0) {
+            try {
+                bg(ask);
+                GM_setValue("bg_setting", "custom");
+                GM_setValue("custom_bg", ask);
+                menu.style.background = "transparent";
+            } catch (e) {};
+        } else {
+            alert("Please try again. Copy & paste an image address from the internet and paste it here to save as your wallpaper. 😊");
+        }
+    }
+}
+
+function bg(img) {
+    if (document.getElementsByTagName("body")[0] !== undefined) {
+        document.getElementsByTagName("body")[0].style.background = `black url(${img}) no-repeat center center fixed`;
+        document.getElementsByTagName("body")[0].style.backgroundSize = "cover";
+    }
+}
+
+function cleanUp() {
+    setInterval(() => {
+        if(document.getElementById("launcher")!==null){document.getElementById("launcher").style.display="none"};
+        document.getElementsByClassName("mainhead")[0].style.background = "transparent";
+        document.getElementById("wrap").style.marginTop = "40px";
+        if (document.getElementsByName("stageFrame")[0] !== undefined) {
+            if (document.getElementsByName("stageFrame")[0].contentDocument !== null) {
+                if (document.getElementsByName("stageFrame")[0].contentDocument.body !== null) {
+                    document.getElementsByName("stageFrame")[0].contentDocument.body.style.background = "transparent";
+                    document.getElementsByName("stageFrame")[0].contentDocument.body.style.overflow = "hidden";
+                }
+                if (document.getElementsByName("stageFrame")[0].contentDocument.getElementsByClassName("container av-container")[0] !== undefined) {
+                    document.getElementsByName("stageFrame")[0].contentDocument.getElementsByClassName("container av-container")[0].style.background = "transparent";
+                }
+            }
+        }
+        if (document.getElementsByClassName("mainfoot")[0] !== undefined) {
+            document.getElementsByClassName("mainfoot")[0].style.background = "transparent";
+            document.getElementsByClassName("mainfoot")[0].style.display = "none";
+        }
+        if (document.getElementsByClassName("ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all")[0] !== undefined) {
+            document.getElementsByClassName("ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all")[0].style.background = "none";
+        }
+    }, 500);
+}
+
+
+function final() {
+    let final_chk = setInterval(async () => {
+        let current_c = document.getElementsByClassName("course")[0];
+        if (current_c !== undefined) {
+            console.log("current_c")
+            let picked = await GM_getValue("picked_buy");
+            if(picked!==undefined){
+                picked = Array.prototype.map.call(picked, element => clean(element.toLowerCase()));
+                let toBe_checked = clean(current_c.innerText);
+                if (picked.includes(toBe_checked)) {
+                    brain(current_c.innerText);
+                }
+                else{
+                    let warn = document.createElement("p");
+                    warn.style.cssText = "color:coral;margin:0 auto;text-align:center;font-size:20px;margin-top:20px;";
+                    warn.innerText = "This class is not part of your EdgePlus plan. EdgyBot will not work on this class...";
+                    document.body.append(warn);
+                }
+            }
+            clearInterval(final_chk);
+        }
+    }, 500);
+}
+
+
+function courseline() {
+    let investo = setInterval(async () => {
+        let expecto = document.getElementsByClassName("profile-button")[0];
+        let user_did = document.getElementsByClassName("navbar-brand navbar-title")[0];
+        let flex_unit = document.getElementsByClassName("flex-column unit-list")[0];
+        let activity = document.getElementsByClassName("ActivityTile")[0];
+        if (expecto !== undefined && user_did !== undefined && flex_unit !== undefined && activity !== undefined) {
+            if (document.getElementById("title_left") !== null) {
+                document.getElementById("title_left").parentElement.remove()
+            };
+            let expected = await GM_getValue("imp_stuff");
+            if(expected!==undefined){
+                if (expecto.innerText.toLowerCase().trim() == extra(expected, "inits")) {
+                    let user_didnt = await GM_getValue("picked_buy");
+                    let other_classes = document.querySelectorAll(".dropdown-menu:not(.dropdown-menu-right)")[0].querySelectorAll(".dropdown-item");
+                    if(other_classes[0]!==undefined){
+                        for(let i=0;i<other_classes.length;i++){
+                            if(user_didnt.includes(other_classes[i].innerText)){
+                                other_classes[i].addEventListener("click",()=>{
+                                    GM_setValue("class_wip",other_classes[i].innerText);
+                                })
+                            }
+                        }
+                    }
+                    if (user_didnt.includes(user_did.title)) {
+                        clearInterval(investo);
+                        GM_setValue("saved_return", location.href);
+                        GM_setValue("class_wip",user_did.title);
+                        wip(user_did.title);
+                    }else{
+                        clearInterval(investo);
+                        let await_footer = setInterval(()=>{
+                            if(document.getElementsByClassName("footer")[0]!==undefined){
+                                document.getElementsByClassName("footer")[0].style.display = "block";
+                                document.getElementsByClassName("footer")[0].innerHTML=`<center><h2 style = "color:coral";>This class is not part of your payment plan...</h2></center>`;
+                                clearInterval(await_footer);
+                            }
+                        },100);
+                    }
+                }
+                else {
+                    clearInterval(investo);
+                    location.href="https://student.edgenuity.com/";
+                }
+            } else {
+                clearInterval(investo);
+                location.href="https://student.edgenuity.com/";
+            }
+            clearInterval(investo);
+        };
+    }, 600);
+}
+
+async function wip(class_){
+    let class_wip = await GM_getValue("class_wip")
+    let activity_found = false;
+    let scrolling = setInterval(()=>{
+        if(document.getElementsByClassName("ActivityTile-status-current")[0]!==undefined){
+            let activity = document.getElementsByClassName("ActivityTile-status-current")[0];
+            let gated = activity.parentElement.parentElement.getElementsByClassName("ActivityTile-border-gated")[0];
+            let locked = activity.parentElement.parentElement.getElementsByClassName("ActivityTile-border-locked")[0];
+            if(gated!==undefined){
+                if (class_wip == class_) {
+                    if (!activity.className.includes("ActivityTile-border-gated") && !activity.className.includes("ActivityTile-border-locked")) {
+                        if (activity.getElementsByClassName("badge badge-secondary")[0] !== undefined) {
+                            if (!activity.getElementsByClassName("badge badge-secondary")[0].innerText.includes("contact your teacher")) {
+                                if(!activity_found){
+                                    activity_found = true;
+                                    clearInterval(scrolling);
+                                    GM_setValue("bot_active",true);
+                                    activity.click();
+                                }
+                            } else {
+                                GM_deleteValue("class_wip");
+                                GM_deleteValue("bot_active");
+                                clearInterval(scrolling);
+                                alert("The current activity has an issue, you need to contact your teacher 👎\n\nPlease try another class. 👌");
+                                exit();
+                            }
+                        } else {
+                            if(!activity_found){
+                                activity_found=true;
+                                clearInterval(scrolling);
+                                GM_setValue("bot_active",true);
+                                activity.click();
+                            }
+                        }
+                    } else {
+                        GM_deleteValue("class_wip");
+                        GM_deleteValue("bot_active");
+                        clearInterval(scrolling);
+                        alert("The current activity is locked & pending teacher review. 🔒\n\nPlease try another class. 👌");
+                        exit();
+                    }
+                }
+            }
+            else{
+                if (document.getElementById("title_left") !== null) {
+                    document.getElementById("title_left").parentElement.remove()
+                };
+                document.getElementsByClassName("footer")[0].style.display = "block";
+                try{document.getElementsByClassName("footer")[0].innerHTML=`<center><h1 style = "color:lightblack";>Loading Legacy EdgyAFK...</h1></center>`}catch(e){};
+                setTimeout(()=>{menu_active(class_wip)},100);
+            }
+            clearInterval(scrolling);
+        }
+        else{
+            if(document.getElementsByClassName("btn btn-secondary disabled")[0].innerText=="All Activities Complete"){
+                clearInterval(scrolling);
+                let check = confirm("EdgyBot believes this class has been successfully completed 🤩\n\nYou can now pick another class or manually select any unfinished activity 👌");
+                if(check){
+                    GM_deleteValue("class_wip");
+                    GM_deleteValue("bot_active");
+                    exit();
+                }
+            }
+        }
+        document.getElementsByClassName("course-timeline")[0].children[0].scrollBy(0, 500);
+    },100);
+}
+
+Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
+    get: function() {
+        return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
+    }
+})
+
+function removeLinks(text) {
+    return text.replace(/\[\[\d+?\]\]/g, '').replace(/\[\d+?\]/g, '').replace(/\(https?:\/\/[^\s)]+\)/g, '');
+}
+
+function dashboard() {
+    let check = setInterval(async () => {
+        let msg = document.getElementsByClassName("announcement-panel drawer right open")[0];
+        let pf_circle = document.getElementById("profile-nav-dropdown");
+        if (msg !== undefined) {
+            if (msg.getElementsByClassName("close")[0] !== undefined) {
+                msg.getElementsByClassName("close")[0].click()
+            }
+        }
+        if (pf_circle !== null) {
+            if (document.getElementById("title_left") !== null) {
+                document.getElementById("title_left").parentElement.remove()
+            };
+            let class_items = document.querySelectorAll(".cards");
+            if(class_items.length>0){
+                let inits = pf_circle.innerText.toLowerCase().trim(),
+                    stuff = await GM_getValue("imp_stuff"),
+                    picked = await GM_getValue("picked_buy"),
+                    thing = "stuff",
+                    items = Array.prototype.map.call(class_items, element => (element.querySelector(".course-title").title));
+                inits = inits.split("");
+                inits = `${inits[0]}${inits[inits.length-1]}`;
+                if (stuff !== undefined) {
+                    if (extra(stuff, "inits") == inits) {
+                        thing = stuff
+                    }
+                }
+                if (stuff !== thing) {
+                    menu_sec(inits);
+                    reset_bot();
+                } else {
+                    if (picked !== undefined) {
+                        let options = document.querySelectorAll(".dropdown-menu-right")[0].querySelectorAll(".dropdown-item");
+                        for(let i=0;i<options.length;i++){
+                            if(options[i].href.includes("logout")){
+                                let saved = options[i].href;
+                                options[i].href="";
+                                options[i].addEventListener("click",(e)=>{
+                                    e.preventDefault();
+                                    let ask = confirm("\nLogging into another account after logging out of Edgenuity will reset your EdgyBot.\n\nPlease make sure to only use your EdgyBot for your account. 🙂");
+                                    if(ask){location.href=saved};
+                                })
+                            }
+                        }
+                        menu_prim();
+                    } else {
+                        menu_pick(items);
+                    }
+                };
+                clearInterval(check);
+            }
+        }
+    }, 500);
+}
+
+async function menu_active(class_wip){
+    let menu = document.createElement("div");
+    menu.innerHTML = `
+    <div title="Hide Menu" id="title_left" style="width:fit-content;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:row;cursor:pointer;">
+    <img style="width:80px;" src="https://github.com/GSRHackZ/EdgyBot_Edgenuity_Bot/blob/main/edgePlus2.png?raw=true"/> <b style="font-size:16px;color:#464747;">EdgyBot v${script_version}</b>
+    </div>
+    <div style="width:100%;height:95%;display:flex;justify-content:space-between;align-items:center;flex-direction:row;margin-right:20px;padding:10px;">
+    <select title="Activity Selection" id="act_select" style="width:350px;height:30px;cursor:pointer;outline:none;background:white;color:black;border:1px solid black;">
+    <option style="color:black" value="def_op">Activity Selection ⚒</option>
+    <option style="color:black" value="edgyafk">EdgyAFK - All Ungraded</option>
+    </select>
+    <button style="width:250px;font-size:16px;padding:5px;cursor:pointer;border:none;outline:none;display:flex;justify-content:center;align-items:center;border-radius:3px;background:#3583c2;color:white;transition:.5s;" title="Start EdgyBot" id="start_bot">Start EdgyBot</button>
+    </div>
+    `;
+    menu.style = `overflow:hidden;background:white;position:fixed;bottom:0;width:100%;z-index:9999999999999999999999;height:fit-content;display:flex;justify-content:space-around;align-items:center;flex-direction:row;padding:10px;padding-bottom:20px;transition:.5s;`;
+    try{document.getElementsByClassName("footer")[0].style.display="none"}catch(e){};
+    document.body.append(menu);
+    let startBot = document.getElementById("start_bot");
+    let bot_active = await GM_getValue("bot_active");
+    let classes = await GM_getValue("picked_buy");
+    let state = await GM_getValue("menu_state");
+    let picked_activity = await GM_getValue("picked_activity");
+    let title = document.getElementById("title_left");
+    let dropdown = document.getElementById("act_select");
+    let scrollable = document.getElementsByClassName("course-timeline")[0].children[0];
+    let other_classes = document.querySelectorAll(".dropdown-menu:not(.dropdown-menu-right)")[0].querySelectorAll(".dropdown-item");
+    let done = false;
+    if(other_classes[0]!==undefined){
+        for(let i=0;i<other_classes.length;i++){
+            if(classes.includes(other_classes[i].innerText)){
+                other_classes[i].addEventListener("click",()=>{
+                    GM_setValue("class_wip",other_classes[i].innerText);
+                })
+            }
+        }
+    }
+    title.addEventListener("click", async () => {
+        let state = await GM_getValue("menu_state");
+        if (state == undefined) {
+            menu.style.opacity = "10%";
+            GM_setValue("menu_state", "hidden");
+            title.title = "Reveal Menu";
+        } else {
+            menu.style.opacity = "100%";
+            GM_deleteValue("menu_state");
+            title.title = "Hide Menu";
+        }
+    })
+    if (state == "hidden") {
+        menu.style.opacity = "10%";
+        title.title = "Reveal Menu";
+    }
+    scrollable.scrollTo(0, 0);
+    let activities = [];
+    let types = [];
+    let activity_found = false;
+    let navs = document.getElementsByClassName("flex-column unit-list")[0].querySelectorAll(".nav-link:not(.collapsed)");
+    for(let x=0;x<navs.length;x++){
+        let cards = document.querySelectorAll(".ActivityTile:not(.ActivityTile-status-completed):not(.ActivityTile-line-completed)");
+        for(let i=0;i<cards.length;i++){
+            let type = cards[i].getElementsByClassName("card-body")[0].innerText.replaceAll("Next Activity\n","").split("\n\n")[0].trim();
+            let activity = cards[i].href;
+            if(clean(type)!=="assignment"){
+                if(!types.includes(type)){types.push(type)};
+                if(!activities.includes(activity)){activities.push({"card":cards[i],"type":type,"link":activity})};
+            }
+            if(bot_active==true){
+                if(picked_activity!==undefined&&!activity_found){
+                    startBot.innerText = "Bot Active...";
+                    startBot.style.background = "springgreen";
+                    if(picked_activity!=="edgyafk"){
+                        for(let i=0;i<activities.length;i++){
+                            if(activities[i].type==picked_activity){
+                                if(!activity_found){
+                                    activity_found=true;
+                                    activities[i].card.click();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        for(let i=0;i<activities.length;i++){
+                            if(allowed.includes(clean(activities[i].type))){
+                                if(!activity_found){
+                                    activity_found = true;
+                                    activities[i].card.click();
+                                    break;
+                                }
+                            }
+
+                        }
+                    };
+                }
+            }
+        }
+        navs[x].click();
+        if(x+1==navs.length){
+            if(!activity_found&&picked_activity!==undefined){
+                if(picked_activity=="edgyafk"){picked_activity="ungraded"};
+                GM_deleteValue("picked_activity");
+                alert(`EdgyBot can't find anymore ${picked_activity} activities, so they are most likely finished. 😊`);
+                location.reload();
+            }
+        }
+    }
+    for(let i=0;i<types.length;i++){
+        let option = document.createElement("option");
+        option.value = types[i];
+        option.innerText = types[i];
+        dropdown.append(option);
+    }
+    startBot.addEventListener("click",()=>{
+        if(dropdown.value!=="def_op"){
+            GM_setValue("picked_activity", dropdown.value);
+            GM_setValue("bot_active",true);
+            if(dropdown.value!=="edgyafk"){
+                for(let i=0;i<activities.length;i++){
+                    if(activities[i].type==dropdown.value){
+                        activities[i].card.click();
+                        break;
+                    }
+                }
+            }
+            else{
+                for(let i=0;i<activities.length;i++){
+                    if(allowed.includes(clean(activities[i].type))){
+                        activities[i].card.click();
+                        break;
+                    }
+                }
+            }
+        }
+        else{
+            alert("\nPick an activity type from the bottom left dropdown menu. 😊");
+        }
+    })
+}
+
+
+
+async function menu_pick(items) {
+    try{
+        let menu = document.createElement("div"),
+            info = await GM_getValue("imp_stuff"),
+            usable = extra(info, "count");
+        menu.id = "menu_pick";
+        menu.style = `width:100%;height:100%;position:fixed;top:0;left:0;margin:0;z-index:1000;background-color:white;font-family: Arial, Helvetica, sans-serif;display:flex;justify-content:center;align-items:center;flex-direction:column;overflow-y:auto;`;
+        let extra_ = "classes";
+        if (usable < 2) {
+            extra_ = "class"
+        };
+        menu.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;flex-direction:row;width:100%;font-family:inherit;margin-bottom:20px;"class="title-box">
+           <img style="user-select:none;-moz-window-dragging:none;-webkit-user-drag:none;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-ms-touch-select:none;width:10%;"src="https://github.com/GSRHackZ/EdgyBot_edgenuity-nuke/blob/main/edgePlus2.png?raw=true" alt="edgyBot"/>
+        </div>
+        <p style="font-family:Arial, Helvetica, sans-serif;">You purchased ${usable} ${extra_}, meaning your EdgyBot is only allowed to run on the ${usable} ${extra_} you pick. 😊</p>
+        <div id="class_container" style="margin-top:20px;overflow:auto;width:fit-content;max-height:500px;"></div>
+        <button style="width:300px;padding:5px;cursor:pointer;border:1px solid lightgray;outline:none;margin-top:30px;display:none;justify-content:center;align-items:center;border-radius:5px;background:#40bde9;color:white;transition:.5s;" title="Pick Classes" id="pick_classes">Pick Classes</button>
+        <p style="margin-top:30px;transition:.5s;" id="convey_msg"></p>
+    `;
+        document.body.append(menu);
+        let pick = document.getElementById("class_container");
+        let final = document.getElementById("pick_classes");
+        let msg = document.getElementById("convey_msg");
+        let wait_pick = [];
+        if(items.length>0){
+            for (let i = 0; i < items.length; i++) {
+                let classItem = document.createElement("button");
+                classItem.value = items[i];
+                classItem.title = items[i];
+                classItem.innerText = items[i];
+                classItem.style = `width:fit-content;min-width:250px;padding:5px;border:1px solid #40bde9;outline:none;color:#40bde9;background:white;cursor:pointer;margin:10px;display:flex;justify-content:center;align-items:center;border-radius:3px;transition:.5s;`;
+                classItem.addEventListener("click",() => {
+                    if (!wait_pick.includes(classItem.value)) {
+                        wait_pick.push(classItem.value);
+                        classItem.style.background = "#40bde9";
+                        classItem.style.color = "white";
+                    } else {
+                        wait_pick = wait_pick.filter(thing => thing !== classItem.value);
+                        classItem.style.color = "#40bde9";
+                        classItem.style.background = "white";
+                    }
+                    if (wait_pick.length > 0) {
+                        final.style.display = "flex"
+                    } else {
+                        final.style.display = "none";
+                        msg.innerText = "";
+                    };
+                })
+                pick.append(classItem);
+            }
+        }
+        final.addEventListener("click", () => {
+            msg.style.color = "black";
+            if (wait_pick.length == 0) {
+                msg.innerText = `Please pick ${extra_}! 😫`;
+            } else if (wait_pick.length < usable) {
+                if (items.length >= usable) {
+                    msg.innerText = `Please pick ${usable} ${extra_}. You purchased ${usable}, so why pick less? 😅`
+                } else if (items.length < usable) {
+                    msg.innerText = `Saving classes to your portfolio... 😊`;
+                    GM_setValue("picked_buy", wait_pick);
+                    setTimeout(() => {
+                        location.reload()
+                    }, 1500);
+                }
+            } else if (wait_pick.length > usable) {
+                msg.innerText = `You only purchased ${usable} ${extra_}, but you picked ${wait_pick.length}. Please pick the correct amount! 😫`;
+            } else if (wait_pick.length == usable) {
+                msg.innerText = `Saving classes to your portfolio... 😊`;
+                GM_setValue("picked_buy", wait_pick);
+                setTimeout(() => {
+                    location.reload()
+                }, 1500);
+            }
+        })
+    }catch(e){
+        console.log(e);
+        alert("There might be an issue with your EdgyBot. 😮\n\nPlease uninstall Tampermonkey (by clicking the top right puzzle icon and then the 3 dots next to the Tampermonkey extension) and follow the steps for installation again. 🙏");
+    };
+}
+
+async function menu_prim() {
+    let menu = document.createElement("div");
+    menu.innerHTML = `
+    <div id="title_left" style="width:fit-content;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:row;cursor:pointer;">
+    <img style="width:80px;" src="https://github.com/GSRHackZ/EdgyBot_Edgenuity_Bot/blob/main/edgePlus2.png?raw=true"/> <b style="font-size:16px;color:#464747;">EdgyBot v${script_version}</b>
+    </div>
+    <div style="width:100%;height:95%;display:flex;justify-content:space-between;align-items:center;flex-direction:row;padding:10px;">
+    <select id="class_select" style="width:350px;height:30px;cursor:pointer;outline:none;">
+    <option value="def_op">Pick a class for EdgyBot to work on... 🤖</option>
+    </select>
+    <button style="width:200px;padding:5px;cursor:pointer;border:1px solid lightgray;outline:none;display:flex;justify-content:center;align-items:center;border-radius:5px;background:#3583c2;color:white;transition:.5s;" title = "Pick Class" id="start_class">Pick Class</button>
+    </div>
+    <button style="width:200px;padding:5px;cursor:pointer;border:1px solid gray;outline:none;display:flex;justify-content:center;align-items:center;border-radius:5px;background:white;color:#3583c2;transition:.5s;display:none;" id="add_class">Add Class</button>
+    `;
+    menu.style = `overflow:hidden;background:white;position:fixed;bottom:0;width:100%;z-index:9999999999999999999;height:fit-content;display:flex;justify-content:space-around;align-items:center;flex-direction:row;padding:10px;padding-bottom:20px;padding-right:15px;transition:.5s;`;
+    document.body.append(menu);
+    autoClicker();
+    let dropdown = document.getElementById("class_select");
+    let startBot = document.getElementById("start_class");
+    let addclass = document.getElementById("add_class");
+    let title = document.getElementById("title_left");
+    let state = await GM_getValue("menu_state");
+    let classes = await GM_getValue("picked_buy");
+    let class_wip = await GM_getValue("class_wip");
+    let bot_active = await GM_getValue("bot_active");
+    let class_cards = document.getElementsByClassName("card");
+    let footer = document.getElementsByClassName("footer")[0];
+    footer.style.display = "none";
+    for(let i=0;i<class_cards.length;i++){
+        let title = document.getElementsByClassName("card-title course-title")[i].title;
+        class_cards[i].addEventListener("click",()=>{
+            if(classes.includes(title)){
+                //GM_setValue("class_wip",title);
+            }
+        });
+    }
+    for (let i = 0; i < classes.length; i++) {
+        let option = document.createElement("option");
+        option.value = classes[i];
+        option.innerText = classes[i];
+        dropdown.append(option);
+    }
+    startBot.addEventListener("click", () => {
+        if (dropdown.value !== "def_op") {
+            menu.remove();
+            GM_setValue("class_wip", dropdown.value);
+            open_class(dropdown.value);
+        }
+        else {
+            alert("Please pick a class from the dropdown menu to the bottom left of your screen. 😊");
+        }
+    });
+    title.addEventListener("click", async () => {
+        let state = await GM_getValue("menu_state");
+        if (state == undefined) {
+            menu.style.opacity = "45%";
+            GM_setValue("menu_state", "hidden");
+            title.title = "Reveal Menu";
+        } else {
+            menu.style.opacity = "100%";
+            GM_deleteValue("menu_state");
+            title.title = "Hide Menu";
+        }
+    })
+    if (state == "hidden") {
+        menu.style.opacity = "45%";
+        menu.title = "Reveal Menu";
+    }
+    if (class_wip !== undefined) {
+        try {
+            if(bot_active==true){
+                open_class(class_wip);
+            }
+        } catch (e) {};
+    }
+}
+
+function menu_sec(inits) {
+    let menu = document.createElement("div");
+    menu.id = "menu_sec";
+    menu.style = `width:100%;height:100%;position:fixed;top:0;left:0;margin:0;z-index:1000;background-color:white;font-family: Arial, Helvetica, sans-serif;display:flex;justify-content:center;align-items:center;flex-direction:column;`;
+    menu.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;flex-direction:row;width:100%;font-family:inherit;margin-bottom:5px;"class="title-box">
+        <img style="user-select:none;-moz-window-dragging:none;-webkit-user-drag:none;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-ms-touch-select:none;width:10%;"src="https://github.com/GSRHackZ/EdgyBot_edgenuity-nuke/blob/main/edgePlus2.png?raw=true" alt="edgyBot"/>
+    </div>
+    <h5>EdgyBot v${script_version}</h5>
+    <div style="display:flex;align-items:center;margin-top:50px;width:100%;justify-content:center;align-items:center;font-family:inherit;flex-direction:column;text-align:center;height:fit-content;">
+       <p style="font-weight:700;margin-bottom:25px;">Login to your EdgyBot below</p><br>
+       <p style="margin-bottom:30px;">Don't have an account? Signup here: <b><a target="_blank" href="https://edgybot-gsrhackz.web.app/">EdgePlus</a></b></p>
+       <input spellcheck="false" id="user_edgy" style="width:300px;outline:none;padding:5px;padding-left:6px;border:none;border-bottom:1.5px solid #007bff;" placeholder="Username..." /><br/>
+       <input spellcheck="false" id="pass_edgy" style="width:300px;outline:none;padding:5px;padding-left:6px;border:none;border-bottom:1.5px solid #007bff;" placeholder="Password..." /><br/><br/>
+       <button id="login_edgy" style="width:250px;border:1px solid #007bff;color:#007bff;outline:none;border-radius:5px;cursor:pointer;padding:5px;">Login</button>
+       <p style="font-size:15px;margin-top:50px;" id="info"></p>
+       <p style="font-size:15px;margin-top:25px;">View the <b><a href="https://github.com/GSRHackZ/EdgyBot_edgenuity-nuke/blob/main/instructions.md#3-how-to-activate-edgybot" target="_blank">instructions</a></b> page for help</p>
+    </div>
+    `;
+    document.body.append(menu);
+    let user_edgy = document.getElementById("user_edgy");
+    let pass_edgy = document.getElementById("pass_edgy");
+    let login_edgy = document.getElementById("login_edgy");
+    let attempted = false;
+    login_edgy.addEventListener("click", async () => {
+        if (user_edgy.value.replaceAll(" ", "").length > 0 && pass_edgy.value.replaceAll(" ", "").length > 0) {
+            if (!attempted) {
+                attempted = true;
+                let url = "https://edgybot-gsrhackz.web.app/pages/checker.html?info_check=";
+                window.open(url + btoa(encodeURIComponent(`${user_edgy.value.toLowerCase().replaceAll(" ","")}||${pass_edgy.value.toLowerCase().replaceAll(" ","")}|-|${inits.toLowerCase().replaceAll(" ","")}`).toLowerCase().replaceAll(" ", "")));
+                let checker = setInterval(async () => {
+                    let imp = GM_getValue("imp_stuff");
+                    let checked = GM_getValue("checked");
+                    let srvr_link = GM_getValue("srvr_link");
+                    if (imp !== undefined && checked !== undefined && srvr_link !== undefined) {
+                        clearInterval(checker);
+                        location.reload();
+                    }
+                }, 500);
+                setTimeout(() => {
+                    attempted = false;
+                }, 10000);
+            }
+        }
+    })
+}
+
+async function open_class(class_name) {
+    let classes = document.getElementsByClassName("card-title course-title");
+    let picked = await GM_getValue("picked_buy");
+    if(picked!==undefined){
+        if (picked.includes(class_name)) {
+            for (let i = 0; i < classes.length; i++) {
+                if (classes[i].title == class_name) {
+                    classes[i].click();
+                    break;
+                }
+            }
+        }
+    }
+}
+function extra(thing1, thing2) {
+    thing1 = decodeURIComponent(atob((thing1)));
+    let letters = "abcdefghijklmnopqrstuvwxyz(";
+    if (thing2.includes("count")) {
+        return thing1.split("*-edgyBot_master_Mind2-*")[1].split("|edgy_list_class|")[0];
+    } else if (thing2.includes("inits")) {
+        return (letters[thing1.split("*-edgyBot_master_Mind2-*")[0].split("-")[0]] + letters[thing1.split("*-edgyBot_master_Mind2-*")[0].split("-")[1]]);
+    } else if (thing2.includes("both")) {
+        return [(letters[thing1.split("*-edgyBot_master_Mind2-*")[0].split("-")[0]] + letters[thing1.split("*-edgyBot_master_Mind2-*")[0].split("-")[1]]), thing1.split("*-edgyBot_master_Mind2-*")[1].split("|edgy_list_class|")[0]]
+    } else {
+        return false;
+    }
+}
+
+function reset_bot() {
+    localStorage.clear();
+    GM_deleteValue("imp_stuff");
+    GM_deleteValue("srvr_link");
+    GM_deleteValue("bg_setting");
+    GM_deleteValue("prev_search");
+    GM_deleteValue("bing_answer");
+    GM_deleteValue("search");
+    GM_deleteValue("afk_state");
+    GM_deleteValue("class_wip");
+    GM_deleteValue("saved_return");
+    GM_deleteValue("checked");
+    GM_deleteValue("bot_active");
+    GM_deleteValue("afk_state_tests_");
+    GM_deleteValue("picked_activity");
+    GM_deleteValue("timer_settings");
+    GM_deleteValue("stop_now");
+    GM_deleteValue("vid_transcripts");
+    GM_deleteValue("bing_answer");
+    GM_deleteValue("all_bing_found");
+    GM_deleteValue("weegy_answers");
+    GM_deleteValue("quizlet_answers");
+    GM_deleteValue("google_answers");
+    GM_deleteValue("gpt-tab");
+    GM_deleteValue("picked_buy");
+    GM_deleteValue("allow_test_auto");
+};
+
+
+function autoClicker() {
+    setInterval(() => {
+        document.body.click();
+        if (document.getElementsByClassName("footnav goRight disabled")[0] !== undefined) {
+            document.getElementsByClassName("footnav goRight disabled")[0].click();
+        }
+    }, 10000);
+    setInterval(()=>{
+        if (document.getElementsByClassName("sessionTimeoutYesNo")[0] !== undefined) {
+            if (document.getElementsByClassName("sessionTimeoutYesNo")[1].innerText == 'Yes') {
+                document.getElementsByClassName("sessionTimeoutYesNo")[1].parentElement.click();
+            }
+        }
+        try {
+            if(document.getElementById("inActivityMessage")!==null){
+                if(document.getElementById("inActivityMessage").style.display!=="none"){
+                    if(document.getElementById("timerStay")!==null){
+                        document.getElementById("timerStay").click();
+                    }
+                }
+            }
+        } catch (e) {}
+    },100);
+}
+
+
+let alerted = false;
+function save_it() {
+    let check = setInterval(() => {
+        if (localStorage.getItem("pass_key") !== null) {
+            GM_setValue("imp_stuff", localStorage.getItem("pass_key"))
+        };
+        if (localStorage.getItem("pass_srvr_key") !== null) {
+            GM_setValue("srvr_link", localStorage.getItem("pass_srvr_key"))
+        };
+        if (localStorage.getItem("pass_key") !== null && localStorage.getItem("pass_srvr_key") !== null) {
+            GM_setValue("checked", "gsr_check");
+            if (!alerted) {
+                alert("Your purchase has been verified. Please login to Edgenuity 🎉🎉");
+                alerted = true;
+            }
+        };
+    }, 500);
+}
+
+
+async function exit(reason) {
+    if (reason == 1 || reason == 2) {
+        alert("Class Not Part Of Payment Plan. Was Not Selected After Purchase. Visit The EdgePlus Website To Add A Class!")
+    } else if (reason !== "smart") {
+        location.href = "https://student.edgenuity.com/";
+    } else {
+        let return_link = await GM_getValue("saved_return");
+        try {
+            if (return_link !== undefined) {
+                parent.location.href = return_link;
+            } else {
+                parent.location.href = "https://student.edgenuity.com/";
+            }
+        } catch (err) {
+            if (return_link !== undefined) {
+                location.href = return_link;
+            } else {
+                location.href = "https://student.edgenuity.com/";
+            }
+        }
+    }
+}
+
+function vocabAuto(){
+    let vocab_wip = false
+    let checker = setInterval(() => {
+        let env = document.getElementsByName("stageFrame")[0].contentWindow;
+        let doc = document.getElementsByName("stageFrame")[0].contentDocument;
+        let API = false;
+        if (env.API !== undefined) {API = env.API};
+        if (doc !== null) {
+            setTimeout(() => {
+                location.reload()
+            }, 15000); // backup refresh
+            setInterval(() => {
+                if (!vocab_wip && doc.getElementsByClassName("word-background")[0] !== undefined) {
+                    let word = doc.getElementsByClassName("word-background")[0].value;
+                    if (doc.getElementsByClassName("word-textbox word-normal")[0] !== undefined) {
+                        vocab_wip = true;
+                        let inp = doc.getElementsByClassName("word-textbox word-normal")[0];
+                        inp.value = word;
+                        inp.dispatchEvent(new Event("keyup"));
+                        let btns = doc.getElementsByClassName("playbutton");
+                        for (let i = 0; i < btns.length; i++) {
+                            btns[i].click();
+                        }
+                        let time_sand = setInterval(() => {
+                            try {
+                                API.Audio.complete()
+                            } catch (e) {};
+                            if (doc.getElementsByClassName("uibtn uibtn-blue uibtn-arrow-next")[0] !== undefined) {
+                                if (!doc.getElementsByClassName("uibtn uibtn-blue uibtn-arrow-next")[0].className.includes("disabled")) {
+                                    let nxt = doc.getElementsByClassName("uibtn uibtn-blue uibtn-arrow-next")[0];
+                                    setTimeout(() => {
+                                        nxt.click();
+                                    }, 1000);
+                                    setTimeout(() => {
+                                        vocab_wip = false;
+                                    }, 2500);
+                                    clearInterval(time_sand);
+                                }
+                            }
+                        }, 300);
+                    }
+                }
+            }, 600);
+            clearInterval(checker);
+        }
+    }, 1000);
+    let watchOut = setInterval(() => {
+        let status = document.getElementById("activity-status");
+        if (status !== null) {
+            if (status.innerText.toLowerCase() == "complete" || status.innerText.toLowerCase() == "bypassed") {
+                clearInterval(watchOut);
+                exit("smart");
+            }
+        };
+    }, 1200);
+}
+
+function login_auth() {
+    if(!location.href.includes("https://edgybot-gsrhackz.web.app/pages/class_add.html?")){
+        let check = setInterval(async () => {
+            if(!document.body.innerText.includes("Your EdgyBot has not been verified as of yet")&&!document.body.innerText.includes("Incorrect information. Account does not exist")){
+                if (localStorage.getItem("pass_key") !== null) {
+                    GM_setValue("imp_stuff", localStorage.getItem("pass_key"))
+                };
+                if (localStorage.getItem("pass_srvr_key") !== null) {
+                    GM_setValue("srvr_link", localStorage.getItem("pass_srvr_key"))
+                };
+                if (localStorage.getItem("pass_key") !== null && localStorage.getItem("pass_srvr_key") !== null) {
+                    GM_setValue("checked", "gsr_check");
+                };
+                let stuff = await GM_getValue("imp_stuff");
+                let srvr = await GM_getValue("srvr_link");
+                let checked = await GM_getValue("checked");
+                if(stuff!==undefined&&srvr!==undefined&&checked!==undefined){
+                    clearInterval(check);
+                    window.close();
+                }
+            }else{localStorage.clear()};
+        }, 100);
+    }
+}
+
+function clean(text) {
+    return text.replaceAll(/[^a-zA-Z0-9]/g, "").toLowerCase();
+}
